@@ -81,7 +81,7 @@ jobs:
           path: site
       - name: Deploy the promoted public sample
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
       - name: Verify that the deployed sample responds
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
