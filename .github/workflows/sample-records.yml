@@ -11,7 +11,7 @@ on:
       request_number:
         description: 이 저장소의 요구사항 Issue 번호
         required: true
-        default: '1'
+        default: '2'
         type: string
       alert_number:
         description: Code scanning 원본 번호 (보안 조치 PR만 사용)

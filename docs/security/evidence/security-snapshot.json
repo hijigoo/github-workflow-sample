@@ -1,0 +1,62 @@
+{
+  "sample": true,
+  "observed_date": "2026-11-01",
+  "repository_url": "https://github.com/hijigoo/github-workflow-sample",
+  "secrets_included": false,
+  "dependabot": {
+    "package": "lodash",
+    "version": "4.17.20",
+    "manifest_path": "package-lock.json",
+    "open_alerts": [
+      { "number": 1, "severity": "high", "state": "open" },
+      { "number": 3, "severity": "medium", "state": "open" },
+      { "number": 4, "severity": "medium", "state": "open" },
+      { "number": 5, "severity": "high", "state": "open" }
+    ],
+    "auto_dismissed_alert": 2,
+    "security_updates_enabled": true,
+    "security_update_result": "blocked mirror host; no successful automated fix claimed",
+    "failed_run_url": "https://github.com/hijigoo/github-workflow-sample/actions/runs/41293406345",
+    "version_update_pr_url": "https://github.com/hijigoo/github-workflow-sample/pull/1",
+    "public_site_uses_dependency": false
+  },
+  "code_scanning": {
+    "tool": "CodeQL",
+    "ref": "refs/heads/main",
+    "fix_analysis_commit": "1fcb9808da565e9356d87446af73123a84842c36",
+    "fix_analysis_run_url": "https://github.com/hijigoo/github-workflow-sample/actions/runs/41297134848",
+    "raw_results_count": 1,
+    "alerts": [
+      {
+        "number": 1,
+        "rule": "js/sql-injection",
+        "state": "fixed",
+        "created_at": "2026-11-01T09:16:25Z",
+        "fixed_at": "2026-11-01T10:22:22Z",
+        "last_detected_commit": "7e374656389ab24b71af8e409dbd434346278ace",
+        "fix_pr_url": "https://github.com/hijigoo/github-workflow-sample/pull/8"
+      },
+      {
+        "number": 2,
+        "rule": "js/missing-rate-limiting",
+        "state": "dismissed",
+        "dismissed_reason": "used in tests",
+        "dismissed_at": "2026-11-01T10:10:53Z"
+      }
+    ],
+    "fixture_in_public_site": false
+  },
+  "secret_scanning": {
+    "number": 1,
+    "secret_type": "github_personal_access_token",
+    "state": "resolved",
+    "resolution": "used_in_tests",
+    "resolved_at": "2026-11-01T10:07:45Z",
+    "push_protection_bypassed": true,
+    "validity": "unknown",
+    "never_issued_fixture": true,
+    "not_an_actual_revocation": true,
+    "push_protection_enabled": true,
+    "fixture_in_public_site": false
+  }
+}
