@@ -1,0 +1,6 @@
+name: Inquiry sample application and isolated analysis example
+queries:
+  - uses: security-extended
+paths:
+  - web
+  - src

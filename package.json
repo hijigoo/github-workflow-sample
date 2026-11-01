@@ -1,0 +1,29 @@
+{
+  "name": "github-workflow-sample",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only GitHub workflow samples built around a fictional inquiry list.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "npm run test:unit && npm run test:ui",
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:ui": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "express": "5.3.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.5",
+    "@types/pg": "8.23.1",
+    "lodash": "4.17.20",
+    "typescript": "7.0.2"
+  }
+}

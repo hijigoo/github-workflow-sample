@@ -1,0 +1,24 @@
+name: 요구사항 샘플
+description: 문의 조회 기능의 요청·완료 조건을 기록하는 예시
+title: "[샘플 요청] "
+labels: [requirements, sample]
+body:
+  - type: textarea
+    id: request
+    attributes:
+      label: 요청 내용
+      description: 무엇을 바꾸고 싶은지, 기존 동작은 무엇인지 적습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 완료 조건
+      description: 정상·예외·기존 동작을 확인할 조건입니다.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 연결된 변경과 확인 결과
+      description: 관련 PR·검증 결과·남은 사항을 연결합니다.

@@ -1,0 +1,118 @@
+name: Create sample PR record
+
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 만들 샘플 PR
+        required: true
+        type: choice
+        options: [status, date, preparation, reflection, release-backmerge, security-fix, security-backmerge]
+      request_number:
+        description: 이 저장소의 요구사항 Issue 번호
+        required: true
+        default: '1'
+        type: string
+      alert_number:
+        description: Code scanning 원본 번호 (보안 조치 PR만 사용)
+        required: false
+        default: '1'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  security-events: read
+
+concurrency:
+  group: create-sample-records
+  cancel-in-progress: false
+
+jobs:
+  create:
+    name: Create the requested sample PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Create once, without overwriting another record
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SAMPLE_KIND: ${{ inputs.kind }}
+          REQUEST_NUMBER: ${{ inputs.request_number }}
+          ALERT_NUMBER: ${{ inputs.alert_number }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+          repo = os.environ["GITHUB_REPOSITORY"]
+          if repo != "hijigoo/github-workflow-sample":
+              raise RuntimeError("This workflow only writes to the approved sample repository.")
+          records = {
+              "status": ("dev", "feature/status", "문의 목록에 상태 검색을 추가합니다", "feature.md"),
+              "date": ("dev", "feature/date", "기간 검색 입력 안내 확인", "feature-date.md"),
+              "preparation": ("release/v1.1", "dev", "상태·기간 검색을 v1.1에 모읍니다", "release-preparation.md"),
+              "reflection": ("main", "release/v1.1", "v1.1.0 릴리스 반영", "release-reflection.md"),
+              "release-backmerge": ("dev", "release/v1.1", "v1.1 검증 변경을 dev에도 이어줍니다", "release-backmerge.md"),
+              "security-fix": ("main", "release/v1.1.1", "CodeQL 조회문 구성 경고 조치", "security-fix.md"),
+              "security-backmerge": ("dev", "release/v1.1.1", "CodeQL 조치를 dev에도 이어줍니다", "security-fix.md"),
+          }
+          kind = os.environ["SAMPLE_KIND"]
+          if kind not in records:
+              raise ValueError("Unknown sample PR kind.")
+          request = os.environ["REQUEST_NUMBER"]
+          if not re.fullmatch(r"[1-9][0-9]*", request):
+              raise ValueError("A positive Issue number is required.")
+
+          def api(method, endpoint, params=None, data=None):
+              args = ["gh", "api", "--method", method, endpoint]
+              if params:
+                  for key, value in params.items():
+                      args += ["-f", f"{key}={value}"]
+              payload = None
+              if data is not None:
+                  args += ["--input", "-"]
+                  payload = json.dumps(data)
+              result = subprocess.run(args, input=payload, text=True, capture_output=True)
+              if result.returncode:
+                  raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+              return json.loads(result.stdout) if result.stdout.strip() else None
+
+          requirement = api("GET", f"repos/{repo}/issues/{request}")
+          if "<!-- sample-requirement:inquiry-v1.1 -->" not in (requirement.get("body") or ""):
+              raise ValueError("The Issue is not this sample's requirement record.")
+          base, head, title, filename = records[kind]
+          existing = api("GET", f"repos/{repo}/pulls", {
+              "state": "all", "base": base, "head": f"hijigoo:{head}",
+          })
+          body = Path(f".github/PULL_REQUEST_TEMPLATE/{filename}").read_text()
+          body = body.replace("{{request}}", f"#{request}")
+          if kind in ("preparation", "reflection"):
+              for name, branch in (("status_pr", "feature/status"), ("date_pr", "feature/date")):
+                  related = api("GET", f"repos/{repo}/pulls", {
+                      "state": "all", "base": "dev", "head": f"hijigoo:{branch}",
+                  })
+                  if not related:
+                      raise RuntimeError(f"The {branch} PR must exist first.")
+                  body = body.replace("{{" + name + "}}", f"#{related[0]['number']}")
+          if kind in ("security-fix", "security-backmerge"):
+              alert_number = os.environ["ALERT_NUMBER"]
+              if not re.fullmatch(r"[1-9][0-9]*", alert_number):
+                  raise ValueError("A positive Code scanning alert number is required.")
+              alert = api("GET", f"repos/{repo}/code-scanning/alerts/{alert_number}")
+              body = body.replace("{{alert_url}}", alert["html_url"])
+          if existing:
+              if "<!-- sample-note:" not in (existing[0].get("body") or ""):
+                  raise RuntimeError("An unrelated PR exists; it will not be overwritten.")
+              record = existing[0]
+          else:
+              record = api("POST", f"repos/{repo}/pulls",
+                  data={"base": base, "head": head, "title": title, "body": body})
+          print(record["html_url"])
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(f"## {title}\n\n[{record['html_url']}]({record['html_url']})\n\n")
+              summary.write("GitHub Actions가 작성한 교육용 샘플 PR입니다. 사람의 리뷰·병합과는 별개입니다.\n")
+          PY

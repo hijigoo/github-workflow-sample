@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>문의 조회 · GitHub Workflow Sample</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <p class="eyebrow">GITHUB WORKFLOW SAMPLE</p>
+      <h1>문의 조회</h1>
+      <p class="description">상태·기간 검색이 추가되는 과정을 확인하는 가상 서비스입니다.</p>
+      <span class="version" id="sample-version"></span>
+    </header>
+    <p class="sample-banner">가상 문의 데이터만 사용합니다. 실제 기업의 고객·운영 정보는 없습니다.</p>
+    <p id="fatal-error" class="error" role="alert" hidden></p>
+    <div id="sample-app" hidden>
+      <form id="query-form" class="query-panel">
+        <fieldset id="query-fields">
+          <legend>조회 조건</legend>
+          <p id="query-hint" class="hint">현재 버전은 전체 조회입니다. 변경 PR에서 검색 조건이 추가됩니다.</p>
+        </fieldset>
+        <div class="buttons">
+          <button type="submit">조회</button>
+          <button type="reset" class="secondary">초기화</button>
+        </div>
+      </form>
+      <p id="query-error" class="error" role="alert" hidden></p>
+      <section class="results" aria-label="문의 조회 결과">
+        <h2 id="result-summary" aria-live="polite"></h2>
+        <p id="query-state" class="hint"></p>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">가상 문의 목록</caption>
+            <thead><tr><th scope="col">문의 번호</th><th scope="col">제목</th><th scope="col">상태</th><th scope="col">등록일</th></tr></thead>
+            <tbody id="inquiry-rows"></tbody>
+          </table>
+        </div>
+        <p id="empty-result" class="empty" hidden>조회 결과가 없습니다.</p>
+      </section>
+    </div>
+    <footer>이 화면의 결과는 샘플입니다. GitHub의 PR·테스트·배포 기록과 함께 살펴보세요.</footer>
+  </main>
+  <script type="module">
+    import('./app.mjs').catch(error => {
+      console.error('Sample screen could not be loaded:', error);
+      const message = document.querySelector('#fatal-error');
+      message.textContent = '샘플 화면을 불러오지 못했습니다. 파일·네트워크 상태를 확인해 주세요.';
+      message.hidden = false;
+      document.querySelector('#sample-app').hidden = true;
+    });
+  </script>
+</body>
+</html>
