@@ -20,7 +20,18 @@
       <form id="query-form" class="query-panel">
         <fieldset id="query-fields">
           <legend>조회 조건</legend>
-          <p id="query-hint" class="hint">현재 버전은 전체 조회입니다. 변경 PR에서 검색 조건이 추가됩니다.</p>
+          <div class="filters">
+            <div class="filter">
+              <label for="inquiry-status">상태</label>
+              <select id="inquiry-status" name="status">
+                <option value="all">전체 상태</option>
+                <option value="processing">처리 중</option>
+                <option value="done">완료</option>
+                <option value="waiting">대기</option>
+              </select>
+            </div>
+          </div>
+          <p id="query-hint" class="hint">상태 조건으로 조회합니다. 기간 조건은 다음 변경에서 추가됩니다.</p>
         </fieldset>
         <div class="buttons">
           <button type="submit">조회</button>
