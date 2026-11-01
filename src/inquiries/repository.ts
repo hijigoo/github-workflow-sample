@@ -11,7 +11,7 @@ sampleRouter.get('/inquiries/:keyword', async (request, response) => {
     response.status(400).json({ error: 'A keyword is required.' });
     return;
   }
-  const query = "SELECT id, title FROM inquiries WHERE status='" + keyword + "'";
-  const result = await pool.query(query);
+  const query = 'SELECT id, title FROM inquiries WHERE status=$1';
+  const result = await pool.query(query, [keyword]);
   response.json(result.rows);
 });
