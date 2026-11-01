@@ -22,6 +22,7 @@ button:focus-visible,input:focus-visible,select:focus-visible { outline: 3px sol
 label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 650; }
 input,select { min-height: 42px; border: 1px solid #abbad1; border-radius: 8px; padding: 8px 12px; background: white; color: var(--ink); font: inherit; }
 .filters { display: flex; gap: 16px; flex-wrap: wrap; }
+.filter { display: grid; gap: 6px; min-width: 160px; }
 .error { border: 1px solid #edb4b4; background: #fff3f3; color: #8e2525; padding: 12px 16px; border-radius: 8px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; }

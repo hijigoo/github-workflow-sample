@@ -32,3 +32,22 @@ test('조회 결과 배열을 바꾸어도 원본 문의 배열은 유지된다'
   result.pop();
   assert.equal(source.length, 6);
 });
+
+test('완료 상태를 선택하면 완료 문의만 조회한다', async () => {
+  const { searchInquiries } = await queryModule();
+  assert.deepEqual(searchInquiries(inquiries, { status: 'done' }).map(item => item.id), [
+    'INQ-002', 'INQ-003', 'INQ-006',
+  ]);
+});
+
+test('처리 중 상태를 선택하면 해당 문의만 조회한다', async () => {
+  const { searchInquiries } = await queryModule();
+  assert.deepEqual(searchInquiries(inquiries, { status: 'processing' }).map(item => item.id), [
+    'INQ-001', 'INQ-005',
+  ]);
+});
+
+test('알 수 없는 상태 입력은 오류로 알린다', async () => {
+  const { searchInquiries } = await queryModule();
+  assert.throws(() => searchInquiries(inquiries, { status: 'unknown' }), RangeError);
+});

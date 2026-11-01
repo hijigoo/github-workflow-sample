@@ -30,3 +30,24 @@ test('화면 모듈을 읽지 못하면 실패를 알리고 조회 화면을 숨
   await expect(page.getByRole('alert')).not.toBeEmpty();
   await expect(page.locator('#query-form')).not.toBeVisible();
 });
+
+test('상태 조건으로 완료 문의 세 건을 확인한다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('상태', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr td:first-child')).toHaveText([
+    'INQ-002', 'INQ-003', 'INQ-006',
+  ]);
+  await expect(page.locator('#result-summary')).toContainText('3건');
+});
+
+test('초기화하면 기존 전체 조회로 돌아간다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('상태', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await page.getByRole('button', { name: '초기화', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr')).toHaveCount(6);
+  await expect(page.getByLabel('상태', { exact: true })).toHaveValue('all');
+});
