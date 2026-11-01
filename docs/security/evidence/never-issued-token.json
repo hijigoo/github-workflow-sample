@@ -1,0 +1,9 @@
+{
+  "sample": "never-issued synthetic token-shaped string",
+  "never_issued": true,
+  "api_status": 401,
+  "checked_at": "2026-11-01T09:55:07.233003+00:00",
+  "sha256": "3f6c92fc13ba3a0c7d70de7def53abe154bbaf756d32c3fc676de0838aab9d6a",
+  "not_an_actual_revocation": true,
+  "public_site_includes_fixture": false
+}

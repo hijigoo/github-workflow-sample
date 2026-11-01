@@ -1,0 +1,5 @@
+# Intentionally nonfunctional sample, never issued by GitHub.
+# GitHub GET /user rejected this fixture with HTTP 401 on 2026-11-01.
+# No application reads this file; it is excluded from the public site package.
+# This is test data, not a credential. Do not use it for authentication.
+DEMO_ONLY_GITHUB_TOKEN=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
