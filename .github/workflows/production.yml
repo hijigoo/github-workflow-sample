@@ -1,0 +1,91 @@
+name: Production - Promote verified package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: 승인·배포가 완료된 Release QA 실행 번호
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: production-sample
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote the same QA package to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Validate the approved release run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          repo = os.environ["GITHUB_REPOSITORY"]
+          run_id = os.environ["RELEASE_RUN_ID"]
+          if repo != "hijigoo/github-workflow-sample" or not re.fullmatch(r"[1-9][0-9]*", run_id):
+              raise ValueError("Only a valid run in this sample repository can be promoted.")
+          result = subprocess.run(["gh", "api", f"repos/{repo}/actions/runs/{run_id}"], capture_output=True, text=True, check=True)
+          run = json.loads(result.stdout)
+          if run["conclusion"] != "success" or run["head_branch"] != "release/v1.1" or not run["path"].endswith("/release.yml"):
+              raise ValueError("The release QA workflow must have completed successfully.")
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.release_run_id }}
+          name: release-${{ inputs.release_run_id }}
+          path: evidence
+      - name: Verify and publish the same package without rebuilding it
+        env:
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          const evidence = JSON.parse(await readFile('evidence/reports/release-evidence.json', 'utf8'));
+          if (!/^inquiry-app-v\d+\.\d+\.\d+\.tar\.gz$/.test(evidence.archive)) throw new Error('Unexpected archive name.');
+          const archive = 'evidence/artifacts/' + evidence.archive;
+          assert.equal(createHash('sha256').update(await readFile(archive)).digest('hex'), evidence.sha256);
+          await mkdir('site', { recursive: true });
+          execFileSync('tar', ['-xzf', archive, '-C', 'site']);
+          await cp('site', 'qa-copy', { recursive: true });
+          await cp('qa-copy', 'site/qa', { recursive: true });
+          await writeFile('site/qa/release-evidence.json', JSON.stringify({
+            ...evidence, release_run_id: process.env.RELEASE_RUN_ID, target: 'qa',
+          }, null, 2));
+          await writeFile('site/deployment-evidence.json', JSON.stringify({
+            ...evidence, release_run_id: process.env.RELEASE_RUN_ID,
+            deploy_run_id: process.env.GITHUB_RUN_ID, target: 'production',
+          }, null, 2));
+          JS
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy the promoted public sample
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify that the deployed sample responds
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 "$PAGE_URL" > production-page.html
+          grep -q 'GitHub Workflow Sample' production-page.html
+          echo "Production URL: $PAGE_URL" >> "$GITHUB_STEP_SUMMARY"

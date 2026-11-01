@@ -1,7 +1,16 @@
 version: 2
+registries:
+  package-proxy:
+    type: npm-registry
+    url: https://packagefeedproxy.microsoft.io/npm/
+    replaces-base: true
+  existing-mirror:
+    type: npm-registry
+    url: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/
 updates:
   - package-ecosystem: npm
     directory: /
+    registries: [package-proxy, existing-mirror]
     schedule:
       interval: weekly
       day: monday

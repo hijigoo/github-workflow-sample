@@ -1,0 +1,104 @@
+name: Release - Build Test QA
+
+on:
+  push:
+    branches: [release/v1.1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-qa
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build / Test release package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://packagefeedproxy.microsoft.io/npm/
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.run_id }}
+          path: |
+            artifacts/
+            reports/
+            playwright-report/
+          retention-days: 90
+
+  qa:
+    name: Deploy the verified package to QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: qa
+      url: ${{ steps.deployment.outputs.page_url }}qa/
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          path: baseline
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Keep the current main version at the site root
+        working-directory: baseline
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://packagefeedproxy.microsoft.io/npm/
+          npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ github.run_id }}
+          path: evidence
+      - name: Verify the archive and prepare the QA site
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          const evidence = JSON.parse(await readFile('evidence/reports/release-evidence.json', 'utf8'));
+          if (!/^inquiry-app-v\d+\.\d+\.\d+\.tar\.gz$/.test(evidence.archive)) throw new Error('Unexpected archive name.');
+          const archive = 'evidence/artifacts/' + evidence.archive;
+          assert.equal(createHash('sha256').update(await readFile(archive)).digest('hex'), evidence.sha256);
+          await cp('baseline/dist', 'site', { recursive: true });
+          await mkdir('site/qa', { recursive: true });
+          execFileSync('tar', ['-xzf', archive, '-C', 'site/qa']);
+          await writeFile('site/qa/release-evidence.json', JSON.stringify({
+            ...evidence, release_run_id: process.env.GITHUB_RUN_ID, target: 'qa',
+          }, null, 2));
+          JS
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy the public QA sample
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify that the deployed QA page responds
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 "${PAGE_URL}qa/" > qa-page.html
+          grep -q 'GitHub Workflow Sample' qa-page.html
+          echo "QA URL: ${PAGE_URL}qa/" >> "$GITHUB_STEP_SUMMARY"

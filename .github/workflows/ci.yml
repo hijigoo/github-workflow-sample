@@ -28,7 +28,7 @@ jobs:
           node-version: '24'
           cache: npm
       - name: Install declared packages
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://packagefeedproxy.microsoft.io/npm/
       - name: Install test browser
         run: npx playwright install --with-deps chromium
       - name: Type check
