@@ -30,3 +30,67 @@ test('화면 모듈을 읽지 못하면 실패를 알리고 조회 화면을 숨
   await expect(page.getByRole('alert')).not.toBeEmpty();
   await expect(page.locator('#query-form')).not.toBeVisible();
 });
+
+test('상태 조건으로 완료 문의 세 건을 확인한다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('상태', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr td:first-child')).toHaveText([
+    'INQ-002', 'INQ-003', 'INQ-006',
+  ]);
+  await expect(page.locator('#result-summary')).toContainText('3건');
+});
+
+test('초기화하면 기존 전체 조회로 돌아간다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('상태', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await expect(page.getByLabel('시작일', { exact: true })).toBeVisible();
+  await page.getByLabel('시작일', { exact: true }).fill('2026-10-01');
+  await page.getByLabel('종료일', { exact: true }).fill('2026-10-31');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await page.getByRole('button', { name: '초기화', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr')).toHaveCount(6);
+  await expect(page.getByLabel('상태', { exact: true })).toHaveValue('all');
+  await expect(page.getByLabel('시작일', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('종료일', { exact: true })).toHaveValue('');
+});
+
+test('완료 상태와 10월 기간을 적용하면 두 건이 보인다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('시작일', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByLabel('시작일', { exact: true }).fill('2026-10-01');
+  await page.getByLabel('종료일', { exact: true }).fill('2026-10-31');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr td:first-child')).toHaveText(['INQ-002', 'INQ-003']);
+  await expect(page.locator('#result-summary')).toContainText('2건');
+});
+
+test('기간 역전은 안내하고 직전 조회 결과를 유지한다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('시작일', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr')).toHaveCount(3);
+  await page.getByLabel('시작일', { exact: true }).fill('2026-10-31');
+  await page.getByLabel('종료일', { exact: true }).fill('2026-10-01');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#query-error')).toBeVisible();
+  await expect(page.locator('#query-error')).toContainText('기간');
+  await expect(page.locator('#query-state')).toContainText('조회하지');
+  await expect(page.locator('#inquiry-rows tr td:first-child')).toHaveText(['INQ-002', 'INQ-003', 'INQ-006']);
+});
+
+test('조건에 맞는 문의가 없으면 빈 결과 안내가 보인다', async ({ page }) => {
+  await page.goto(server.url);
+  await expect(page.getByLabel('시작일', { exact: true })).toBeVisible();
+  await page.getByLabel('상태', { exact: true }).selectOption('done');
+  await page.getByLabel('시작일', { exact: true }).fill('2026-08-01');
+  await page.getByLabel('종료일', { exact: true }).fill('2026-08-31');
+  await page.getByRole('button', { name: '조회', exact: true }).click();
+  await expect(page.locator('#inquiry-rows tr')).toHaveCount(0);
+  await expect(page.locator('#empty-result')).toBeVisible();
+  await expect(page.locator('#result-summary')).toContainText('0건');
+});
