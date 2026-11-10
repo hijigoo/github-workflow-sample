@@ -1,12 +1,35 @@
 # GitHub Workflow Sample
 
-**가상 문의 조회 사례를 통해 GitHub의 실제 기록을 열어 보는 샘플 저장소입니다.**
-수강자가 코드를 바꾸거나 PR을 만드는 실습 과제가 아닙니다.
+## 프로젝트 소개
+
+가상 문의 조회 화면의 변경 과정을 따라가며 **요구사항부터 검증·배포까지 이어지는 GitHub 기록**을 살펴보는 샘플 저장소입니다. 코드를 수정하거나 PR을 만드는 실습 과제는 아닙니다.
 
 브랜치·요구사항·PR·리뷰·댓글·검증·승인·배포·릴리스는 실제 GitHub 기록입니다.
-문의 데이터와 PM·수행사 역할, 업무 판단은 가상입니다.
+문의 데이터와 PM·수행사 역할, 업무 판단은 가상이며 실제 기업의 정보가 아닙니다.
 
-**먼저 보기:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 PR](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 공지](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
+### 주요 기능과 살펴볼 기록
+
+- 상태·기간을 함께 적용하는 가상 문의 조회와 잘못된 기간·빈 결과 안내
+- 요구사항, 기능 PR, 배포 준비, main 반영, 최종 릴리스로 이어지는 실제 GitHub 이력
+- Actions의 Build·Test·QA·운영 배포와 Dependabot·Code scanning·Secret scanning 사례
+
+**기록을 따라보기:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 PR #4](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 v1.1.0](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
+
+## 시작하기
+
+로컬에서 테스트와 정적 패키지 빌드를 실행하려면 Node.js 22 이상과 npm이 필요합니다. 저장소 루트에서 다음 명령을 순서대로 실행하세요.
+
+```bash
+git clone https://github.com/hijigoo/github-workflow-sample.git
+cd github-workflow-sample
+npm ci --ignore-scripts --no-audit --no-fund --registry=https://packagefeedproxy.microsoft.io/npm/
+npx playwright install chrome
+npm run typecheck
+npm test
+npm run build
+```
+
+`npm test`는 단위 테스트와 브라우저 UI 테스트를 실행합니다. `npm run build`는 `dist/`에 정적 화면과 매니페스트를 만들고, `artifacts/`와 `reports/`에 배포 패키지와 증빙을 생성합니다. 이 저장소에는 로컬 웹 서버를 시작하는 npm 명령이 없습니다. 화면을 바로 보려면 [운영 샘플](https://hijigoo.github.io/github-workflow-sample/) 또는 [QA 샘플](https://hijigoo.github.io/github-workflow-sample/qa/)을 여세요.
 
 ## 실제 화면과 열람 안내
 
