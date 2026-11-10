@@ -2,22 +2,28 @@
 
 ## 프로젝트 소개
 
-가상 문의 조회 화면의 변경 과정을 따라가며 **요구사항부터 검증·배포까지 이어지는 GitHub 기록**을 살펴보는 샘플 저장소입니다. 코드를 수정하거나 PR을 만드는 실습 과제는 아닙니다.
+가상 문의 조회 화면을 예로 들어 **요구사항부터 검증·배포까지 이어지는 실제 GitHub 기록**을 살펴보는 샘플 저장소입니다. 코드 변경을 검토받고 반영을 요청하는 PR(Pull Request)을 만들거나 코드를 수정하는 실습 과제는 아닙니다.
 
-브랜치·요구사항·PR·리뷰·댓글·검증·승인·배포·릴리스는 실제 GitHub 기록입니다.
-문의 데이터와 PM·수행사 역할, 업무 판단은 가상이며 실제 기업의 정보가 아닙니다.
+브랜치·요구사항·PR·리뷰·댓글·검증·승인·배포·릴리스는 실제 기록입니다. 문의 데이터와 PM·수행사 역할, 업무 판단은 가상이며 실제 기업의 정보가 아닙니다.
 
-### 주요 기능과 살펴볼 기록
+## 설치 없이 먼저 보기
 
-- 상태·기간을 함께 적용하는 가상 문의 조회와 잘못된 기간·빈 결과 안내
-- 요구사항, 기능 PR, 배포 준비, main 반영, 최종 릴리스로 이어지는 실제 GitHub 이력
-- Actions의 Build·Test·QA·운영 배포와 Dependabot·Code scanning·Secret scanning 사례
+아래 공개 화면은 설치 없이 바로 볼 수 있습니다. GitHub 기록도 공개 범위에서 확인할 수 있지만, Actions 실행 보고서와 일부 보안 정보는 로그인이나 열람 권한이 필요할 수 있습니다.
 
-**기록을 따라보기:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 PR #4](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 v1.1.0](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
+| 먼저 볼 곳 | 여기서 볼 수 있는 내용 |
+|---|---|
+| [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) | 가상 문의의 상태·기간을 바꿔 보고 검색 결과 확인 |
+| [QA(Quality Assurance, 배포 전 품질 확인) 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) | 운영에 게시하기 전에 확인하는 같은 문의 화면 |
+| [GitHub 기록 열람 안내](docs/reading-guide.md) | 요구사항, PR 검토, 테스트와 배포 기록을 따라가는 방법 |
+| [보안 리포트](docs/security-report.md) | 계정 권한 없이 읽을 수 있는 보안 사례 요약 |
 
-## 시작하기
+**GitHub 기록을 따라보려면:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 변경 제안(PR) #4](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 v1.1.0](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
 
-로컬에서 테스트와 정적 패키지 빌드를 실행하려면 Node.js 22 이상과 npm이 필요합니다. 저장소 루트에서 다음 명령을 순서대로 실행하세요.
+![완료 상태와 10월 기간을 적용하여 가상 문의 두 건을 조회한 실제 게시 화면](docs/images/inquiry-query.png)
+
+## 선택 사항: 로컬에서 테스트와 빌드
+
+위 화면과 기록을 보는 데에는 아래 절차가 필요하지 않습니다. 직접 프로젝트를 검증하거나 배포용 파일을 만들어 보고 싶은 경우에만 Node.js 22 이상과 npm을 설치하고, 저장소 루트에서 실행하세요.
 
 ```bash
 git clone https://github.com/hijigoo/github-workflow-sample.git
@@ -29,13 +35,7 @@ npm test
 npm run build
 ```
 
-`npm test`는 단위 테스트와 브라우저 UI 테스트를 실행합니다. `npm run build`는 `dist/`에 정적 화면과 매니페스트를 만들고, `artifacts/`와 `reports/`에 배포 패키지와 증빙을 생성합니다. 이 저장소에는 로컬 웹 서버를 시작하는 npm 명령이 없습니다. 화면을 바로 보려면 [운영 샘플](https://hijigoo.github.io/github-workflow-sample/) 또는 [QA 샘플](https://hijigoo.github.io/github-workflow-sample/qa/)을 여세요.
-
-## 실제 화면과 열람 안내
-
-[운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) · [QA 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) · [어디에서 무엇을 볼지](docs/reading-guide.md) · [보안 리포트와 확인 경로](docs/security-report.md)
-
-![완료 상태와 10월 기간을 적용하여 가상 문의 두 건을 조회한 실제 게시 화면](docs/images/inquiry-query.png)
+`npm run typecheck`는 타입을 검사하고, `npm test`는 단위 테스트와 브라우저 화면 테스트를 실행합니다. `npm run build`는 정적 화면과 매니페스트를 `dist/`에, 배포 패키지와 증빙을 `artifacts/`와 `reports/`에 생성합니다. 로컬 웹 서버를 시작하는 명령은 없으며, 만든 파일을 확인하는 것이 목적이 아니라면 이 절차를 건너뛰어도 됩니다.
 
 ## 네 가지 노트
 
