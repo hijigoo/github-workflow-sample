@@ -2,9 +2,7 @@
 
 ## 프로젝트 소개
 
-가상 문의 조회 화면을 예로 들어 **요구사항부터 검증·배포까지 이어지는 실제 GitHub 기록**을 살펴보는 샘플 저장소입니다. 코드 변경을 검토받고 반영을 요청하는 PR(Pull Request)을 만들거나 코드를 수정하는 실습 과제는 아닙니다.
-
-브랜치·요구사항·PR·리뷰·댓글·검증·승인·배포·릴리스는 실제 기록입니다. 문의 데이터와 PM·수행사 역할, 업무 판단은 가상이며 실제 기업의 정보가 아닙니다.
+가상 문의 조회 화면을 예로 들어 **요구사항부터 검증·배포까지 이어지는 GitHub 기록**을 살펴보는 샘플 저장소입니다. 브랜치, 요청, PR(Pull Request: 코드 변경을 검토받고 반영을 요청하는 절차), 리뷰, 테스트와 배포 이력은 실제 기록입니다. 화면에 나오는 문의 내용과 PM·수행사 역할, 업무 판단은 설명을 위해 만든 가상 사례이며 실제 기업이나 고객 정보가 아닙니다. 코드를 수정하거나 PR을 만드는 실습 과제도 아닙니다.
 
 ## 설치 없이 먼저 보기
 
@@ -12,9 +10,9 @@
 
 | 먼저 볼 곳 | 여기서 볼 수 있는 내용 |
 |---|---|
-| [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) | 가상 문의의 상태·기간을 바꿔 보고 검색 결과 확인 |
-| [QA(Quality Assurance, 배포 전 품질 확인) 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) | 운영에 게시하기 전에 확인하는 같은 문의 화면 |
-| [GitHub 기록 열람 안내](docs/reading-guide.md) | 요구사항, PR 검토, 테스트와 배포 기록을 따라가는 방법 |
+| [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) | 가상 문의의 상태와 기간을 바꿔 검색 결과 확인 |
+| [QA(Quality Assurance, 배포 전 품질 확인) 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) | 운영 게시 전에 확인하는 같은 문의 화면 |
+| [GitHub 기록 열람 안내](docs/reading-guide.md) | 요청부터 변경 검토, 테스트와 배포까지의 흐름 |
 | [보안 리포트](docs/security-report.md) | 계정 권한 없이 읽을 수 있는 보안 사례 요약 |
 
 **GitHub 기록을 따라보려면:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 변경 제안(PR) #4](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 v1.1.0](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
@@ -23,7 +21,9 @@
 
 ## 선택 사항: 로컬에서 테스트와 빌드
 
-위 화면과 기록을 보는 데에는 아래 절차가 필요하지 않습니다. 직접 프로젝트를 검증하거나 배포용 파일을 만들어 보고 싶은 경우에만 Node.js 22 이상과 npm을 설치하고, 저장소 루트에서 실행하세요.
+위 화면과 GitHub 기록을 둘러보는 데에는 아래 절차가 필요하지 않습니다. 직접 테스트하거나 배포용 파일을 만들어 보려는 경우에만 진행하세요.
+
+**필요한 도구:** Git, Node.js 22 이상, npm, 그리고 Playwright가 사용하는 Chrome 브라우저. npm은 Node.js 설치에 포함됩니다. 저장소 루트에서 다음 명령을 순서대로 실행하세요.
 
 ```bash
 git clone https://github.com/hijigoo/github-workflow-sample.git
@@ -35,7 +35,17 @@ npm test
 npm run build
 ```
 
-`npm run typecheck`는 타입을 검사하고, `npm test`는 단위 테스트와 브라우저 화면 테스트를 실행합니다. `npm run build`는 정적 화면과 매니페스트를 `dist/`에, 배포 패키지와 증빙을 `artifacts/`와 `reports/`에 생성합니다. 로컬 웹 서버를 시작하는 명령은 없으며, 만든 파일을 확인하는 것이 목적이 아니라면 이 절차를 건너뛰어도 됩니다.
+| 단계 | 명령 | 목적 |
+|---|---|---|
+| 저장소 복사 | `git clone` | GitHub에서 저장소 복사본을 받습니다. |
+| 폴더 이동 | `cd github-workflow-sample` | 이후 명령을 저장소 폴더에서 실행하도록 이동합니다. |
+| 패키지 설치 | `npm ci` | 잠금 파일에 기록된 패키지를 설치합니다. 위 명령의 옵션으로 저장소 CI와 같은 패키지 미러를 사용합니다. |
+| 브라우저 준비 | `npx playwright install chrome` | 브라우저 화면 테스트에 필요한 Chrome을 설치합니다. |
+| 타입 검사 | `npm run typecheck` | TypeScript 코드의 타입 오류를 검사합니다. |
+| 테스트 실행 | `npm test` | 단위 테스트와 브라우저 화면 테스트를 실행합니다. |
+| 패키지 빌드 | `npm run build` | 정적 화면과 매니페스트를 `dist/`에, 배포용 압축 파일을 `artifacts/`에, 빌드 증빙을 `reports/`에 생성합니다. |
+
+저장소의 npm 스크립트에는 로컬 웹 서버 실행 명령이 없습니다. 화면을 보려면 위의 [운영 샘플](https://hijigoo.github.io/github-workflow-sample/)이나 [QA 샘플](https://hijigoo.github.io/github-workflow-sample/qa/)을 이용하세요.
 
 ## 네 가지 노트
 
