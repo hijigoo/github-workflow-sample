@@ -316,7 +316,7 @@ function Invoke-RepositoryCopy {
         }
     }
     if (-not $Confirmed) {
-        throw 'Review pioneer-guide.md; set SettingsConfirmed=$true or use -ConfirmSettings / --confirm-settings.'
+        throw 'Review docs/handson/00-preparation.md; set SettingsConfirmed=$true or use -ConfirmSettings / --confirm-settings.'
     }
     if ($Source -cnotmatch '^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$') {
         throw '--source must be OWNER/REPO, not a URL.'

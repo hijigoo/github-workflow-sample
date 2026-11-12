@@ -169,7 +169,7 @@ main() {
   done
 
   [[ "${confirmed}" == true ]] ||
-    err "Review pioneer-guide.md; set SETTINGS_CONFIRMED=true or use --confirm-settings."
+    err "Review docs/handson/00-preparation.md; set SETTINGS_CONFIRMED=true or use --confirm-settings."
   [[ "${source}" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]] ||
     err "--source must be OWNER/REPO, not a URL."
   [[ "${target}" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]] ||
