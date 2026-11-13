@@ -25,6 +25,7 @@ CodeQL이 분석을 수행하고, SARIF는 그 결과를 담으며, GitHub의 Co
 
 제공된 기준 저장소의 `Security and quality → Code scanning`에서 등록된 CodeQL 경고를 열거나,
 커밋된 [SARIF](../../code-scanning.sarif)를 GitHub 웹에서 엽니다.
+기준 저장소에는 기존 SARIF를 자동 등록하지 않으므로, 경고 목록이 비어 있으면 파일을 사용합니다.
 본인 포크에 이미 경고가 등록돼 있으면 그 결과를 사용해도 됩니다.
 GitHub 우측 상단의 Copilot 아이콘을 클릭한 뒤 [New Session](https://github.com/copilot) 메뉴를 클릭합니다.
 본인의 실습 저장소를 연결하고 경고 또는 SARIF 파일 링크를 붙여 자연어로 요청합니다.
@@ -42,12 +43,13 @@ SARIF에는 다음 CodeQL 경고 두 건이 포함돼 있습니다.
 빈 목록만 보고 업로드 성공이나 전체 안전을 단정하지 않습니다.
 
 ```text
-제공한 경고 또는 SARIF 파일 링크를 업무 담당자가 이해할 수 있게 설명해줘.
+현재 연결된 실습 저장소의 code-scanning.sarif를 읽고, 경고 내용을 업무 담당자가 이해할 수 있게 설명해줘.
+제공한 Code scanning 경고 링크가 있으면 함께 참고해줘.
 js/sql-injection 또는 js/missing-rate-limiting 중 실제 경고 한 건을 기준으로,
 어떤 입력이 어떤 코드로 전달돼 문제가 될 수 있는지 근거 링크와 함께 알려줘.
 탐지 사실, 실제 서비스 영향, 확인하지 못한 사항과 권장 조치를 구분해줘.
 규칙·파일·라인·상태·분석 커밋과 시각도 확인해줘.
-직접 조회하지 못하면 그 사실을 알려주고 제공된 경고 내용이나 SARIF에만 근거해줘.
+직접 조회하지 못하면 그 사실을 알려주고 제공된 경고 내용이나 code-scanning.sarif에만 근거해줘.
 새 분석·코드 수정·경고 종료는 하지 마.
 ```
 
@@ -60,10 +62,10 @@ Open은 악용 가능성 확정이 아니며, Fixed와 Dismissed도 같은 의�
 ## 조사·조치 Issue 작성
 
 ```text
-확인한 경고 한 건을 조사·조치하는 Issue 초안을 작성해줘.
-탐지된 사실, 영향 판단, 확인하지 못한 사항과 원본 경고 링크를 구분해줘.
+현재 연결된 실습 저장소의 code-scanning.sarif에서 확인한 경고 한 건을 조사·조치하는 Issue 초안을 작성해줘.
+탐지된 사실, 영향 판단, 확인하지 못한 사항과 근거가 되는 경고 또는 파일 링크를 구분해줘.
 수정 필요성을 판단할 조사 항목과, 수정한다면 필요한 변경·테스트 범위를 적어줘.
-분석 SHA와 원본 분석 시각을 기록하고, SARIF 업로드는 새 검사가 아님을 명시해줘.
+code-scanning.sarif에서 확인되는 분석 SHA와 시각을 기록하고, SARIF 업로드는 새 검사가 아님을 명시해줘.
 CodeQL 재분석은 이번 실습에서 실행하지 않으므로 후속 확인 항목으로 남겨줘.
 기존 Issue·PR과 중복되지 않게 하고 아직 등록하거나 구현하지 마.
 ```
@@ -86,8 +88,9 @@ Copilot 담당자 할당이나 경고 상태 변경, 수정 작업은 시작하�
 
 ```text
 조직/저장소의 조사·조치 Issue 링크에서 합의한 수정만 준비해줘.
-승인된 Cloud 환경의 별도 작업 브랜치에서 수정과 회귀 테스트를 수행해줘.
-원본 SARIF와 main은 유지하고 Actions·CodeQL 분석·자동 리뷰는 실행하지 마.
+승인된 Cloud 환경에서 수정과 회귀 테스트를 수행해줘.
+현재 연결된 실습 저장소의 code-scanning.sarif를 참고하고 이 파일은 수정하지 마.
+Actions·CodeQL 분석·자동 리뷰는 실행하지 마.
 경고를 Fixed나 Dismissed로 처리하지 마.
 아직 push나 PR 생성은 하지 말고 변경 내용과 실제 Cloud 테스트 결과,
 CodeQL 재분석 등 아직 확인하지 못한 사항을 알려줘.
@@ -105,7 +108,7 @@ Dependabot·Secret scanning은 이번 CodeQL SARIF의 대상이 아닙니다.
 
 ## 선택 실습: 기존 SARIF 등록
 
-기본 웹 실습을 마친 뒤, 관심 있는 실습자만 본인 포크에 기존 경고를 등록해 봅니다.
+기본 웹 실습을 마친 뒤, 관심 있는 실습자만 함께 복사된 SARIF를 본인 실습 저장소에 등록해 봅니다.
 이 단계는 필수가 아니며 건너뛰어도 기본 실습을 완료할 수 있습니다. Actions runner나 새 CodeQL 분석은 사용하지 않습니다.
 
 <details>
@@ -114,15 +117,13 @@ Dependabot·Secret scanning은 이번 CodeQL SARIF의 대상이 아닙니다.
 ### 실행 전 확인
 
 * [Pioneer 가이드의 준비 도구와 CLI 인증](../pioneer-guide.md)을 참고해 Git·GitHub CLI와 OS별 도구를 준비합니다.
-* 공개 원본 저장소의 `Code → Download ZIP` 등으로 스크립트와 커밋된 SARIF를 내려받고, 압축을 푼 저장소 루트에서 실행합니다.
 * EMU 계정으로 GitHub CLI에 로그인하고 본인 포크에 SARIF를 등록할 권한을 확인합니다.
 * 관리자에게 포크의 Code Security 이용 권한·비용 승인을 확인받습니다. 이 명령은 Code Security를 활성화하지 않습니다.
 * 포크의 Actions·CodeQL default setup이 비활성화돼 있고 자동 실행이 차단돼 있는지 확인합니다.
-* 포크의 `main`이 `7e374656389ab24b71af8e409dbd434346278ace`인지 확인합니다. 이 SHA와 제공된 SARIF의 짝을 유지합니다.
 * 같은 결과가 이미 등록돼 있다면 중복 제출하지 않고 웹 결과만 확인합니다.
 
-아래 `ORG`와 `<USER_ID>`를 실제 값으로 바꿉니다.
-따옴표는 유지하고 `<USER_ID>`의 꺾쇠까지 본인의 GitHub 사용자 ID로 바꿉니다.
+아래 `ORG`와 `<USER_ID>`를 본인의 실제 대상 조직·GitHub 사용자 ID로 바꿉니다.
+따옴표는 유지하고 `<USER_ID>`의 꺾쇠까지 바꿉니다.
 `--confirm-settings` 또는 `-ConfirmSettings`는 위 정책·권한·비용을 확인한 뒤에만 지정합니다.
 
 macOS·Linux:
@@ -130,7 +131,6 @@ macOS·Linux:
 ```bash
 bash ./scripts/linux/fork.sh \
   --target 'ORG/github-workflow-<USER_ID>' \
-  --commit 7e374656389ab24b71af8e409dbd434346278ace \
   --sarif ./code-scanning.sarif \
   --upload-only \
   --confirm-settings
@@ -141,7 +141,6 @@ Windows:
 ```powershell
 pwsh -NoProfile -File .\scripts\win\fork.ps1 `
   -TargetRepo 'ORG/github-workflow-<USER_ID>' `
-  -AnalyzedSha 7e374656389ab24b71af8e409dbd434346278ace `
   -SarifFile ./code-scanning.sarif `
   -UploadOnly `
   -ConfirmSettings
@@ -151,8 +150,8 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 
 업로드 전용 모드는 저장소 생성·설정 변경·Git push를 하지 않으며 로컬 대상 디렉터리 지정도 필요하지 않습니다.
 실행 출력의 `SARIF processing complete:`를 확인한 뒤,
-본인 포크의 `Security and quality → Code scanning`에서 규칙·파일·라인·분석 SHA를 대조합니다.
-원본 분석 시각과 이번 업로드 시각은 구분합니다. API 접수만으로 등록 완료를 판단하지 않습니다.
+본인 포크의 `Security and quality → Code scanning`에서 규칙·파일·라인·등록 대상 커밋을 확인합니다.
+API 접수만으로 등록 완료를 판단하지 않습니다.
 
 실패하면 출력된 오류와 업로드 ID의 처리 상태를 확인하고, 확인 없이 중복 제출하지 않습니다.
 권한·도구·설정이 준비되지 않았다면 명령 실행을 건너뛰고 기본 웹 실습 결과를 사용합니다.

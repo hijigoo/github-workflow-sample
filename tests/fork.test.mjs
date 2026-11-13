@@ -63,6 +63,12 @@ function fixture(t) {
   git(['-C', source, 'commit', '--allow-empty', '-m', 'Review fixture']);
   const reviewSha = git(['-C', source, 'rev-parse', 'HEAD']);
   git(['-C', source, 'switch', 'main']);
+  git(['-C', source, 'switch', '-c', 'handson']);
+  writeFileSync(join(source, 'handson-only.txt'), 'Hands-on branch content\n');
+  git(['-C', source, 'add', 'handson-only.txt']);
+  git(['-C', source, 'commit', '-m', 'Hands-on fixture']);
+  const handsonSha = git(['-C', source, 'rev-parse', 'HEAD']);
+  git(['-C', source, 'switch', 'main']);
   git(['init', '--bare', '--initial-branch=main', target]);
   git(['config', '--global', `url.${source}.insteadOf`, 'https://github.com/example/source.git']);
   git(['config', '--global', `url.${target}.insteadOf`, 'https://github.com/example/target.git']);
@@ -150,18 +156,73 @@ else if (endpoint === 'repos/example/target') {
 else { console.error('Unexpected API request'); process.exit(1); }
 `, { mode: 0o700 });
   writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
-  function run(extra = [], overrides = {}) {
+  function run(extra = [], overrides = {}, { branchCopy = false } = {}) {
     return spawnSync('bash', [
       script, '--source', 'example/source', '--target', 'example/target',
-      '--commit', sha, '--sarif', sarifFile,
+      ...(branchCopy ? [] : ['--commit', sha]), '--sarif', sarifFile,
       '--directory', destination, '--confirm-settings', ...extra,
     ], { cwd: root, env: { ...env, ...overrides }, encoding: 'utf8' });
   }
   function requests() {
     return readFileSync(env.MOCK_API_LOG, 'utf8').trim().split('\n').map(JSON.parse);
   }
-  return { git, run, sha, reviewSha, target, destination, sarifFile, env, requests };
+  return { git, run, sha, reviewSha, handsonSha, target, destination, sarifFile, env, requests };
 }
+
+test('pioneer script uploads SARIF onto current main without analyzed commit history', t => {
+  const f = fixture(t);
+  const source = join(f.destination, '..', 'source');
+  f.git(['-C', source, 'switch', '--orphan', 'fresh-main']);
+  f.git(['-C', source, 'commit', '--allow-empty', '-m', 'New repository fixture']);
+  const freshSha = f.git(['-C', source, 'rev-parse', 'HEAD']);
+  f.git(['-C', source, 'push', f.target, 'fresh-main:refs/heads/main']);
+  const original = readFileSync(f.sarifFile, 'utf8');
+  const result = f.run(['--upload-only'], {}, { branchCopy: true });
+  assert.equal(result.status, 0, result.stderr);
+  const payload = JSON.parse(readFileSync(f.env.MOCK_UPLOAD_BODY, 'utf8'));
+  assert.equal(payload.commit_sha, freshSha);
+  assert.equal(payload.ref, 'refs/heads/main');
+  assert.equal(gunzipSync(Buffer.from(payload.sarif, 'base64')).toString(), original);
+  assert.equal(readFileSync(f.sarifFile, 'utf8'), original);
+  assert.equal(existsSync(f.destination), false);
+  assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), freshSha);
+  assert.ok(f.requests().every(args => args.some(arg => arg.startsWith('repos/example/target/'))));
+});
+
+test('pioneer script copies handson to main by default without requiring or uploading SARIF', t => {
+  const f = fixture(t);
+  const result = f.run(['--sarif', `${f.sarifFile}-missing`], {}, { branchCopy: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
+  assert.equal(f.git(['--git-dir', f.target, 'show', 'main:handson-only.txt']), 'Hands-on branch content');
+  assert.equal(f.git(['--git-dir', f.target, 'for-each-ref', '--format=%(refname)']), 'refs/heads/main');
+  assert.match(result.stdout, /Source branch: handson/);
+  assert.match(result.stdout, /SARIF upload skipped:/);
+  assert.equal(f.requests().some(args => args.some(arg => arg.includes('/code-scanning/sarifs'))), false);
+  assert.equal(existsSync(f.env.MOCK_UPLOAD_BODY), false);
+});
+
+test('pioneer script allows another source branch without mislabelling existing SARIF', t => {
+  const f = fixture(t);
+  const original = readFileSync(f.sarifFile, 'utf8');
+  const result = f.run(['--source-branch', 'review/sort'], {}, { branchCopy: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.reviewSha);
+  assert.equal(readFileSync(f.sarifFile, 'utf8'), original);
+  assert.equal(existsSync(f.env.MOCK_UPLOAD_BODY), false);
+});
+
+test('pioneer script rejects invalid or missing source branches without pushing', t => {
+  for (const branch of ['bad..branch', 'missing']) {
+    const f = fixture(t);
+    const result = f.run(['--source-branch', branch], {}, { branchCopy: true });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /valid branch name|Source branch not found/);
+    assert.equal(f.git(['ls-remote', f.target]), '');
+    assert.equal(existsSync(f.env.MOCK_UPLOAD_BODY), false);
+    if (branch === 'bad..branch') assert.equal(existsSync(f.env.MOCK_API_LOG), false);
+  }
+});
 
 test('pioneer script overrides inherited interactive pagers for child commands', t => {
   const f = fixture(t);
@@ -189,6 +250,7 @@ test('pioneer script runs without arguments after editing its initial configurat
   const configuredScript = join(f.destination, '..', 'configured-fork.sh');
   const settings = {
     SOURCE_REPO: 'example/source',
+    SOURCE_BRANCH: 'main',
     TARGET_REPO: 'example/target',
     ANALYZED_SHA: f.sha,
     SARIF_FILE: f.sarifFile,
@@ -271,16 +333,12 @@ test('pioneer script can upload SARIF to a previously copied main without reclon
   assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha);
 });
 
-test('pioneer script refuses upload-only mode when main or automation settings do not match', t => {
+test('pioneer script refuses upload-only mode when main is missing or automation is enabled', t => {
   const f = fixture(t);
   const missing = f.run(['--upload-only']);
   assert.notEqual(missing.status, 0);
-  assert.match(missing.stderr, /Target main does not match/);
-  f.git(['-C', join(f.destination, '..', 'source'), 'push', f.target, 'review/sort:main']);
-  const wrong = f.run(['--upload-only']);
-  assert.notEqual(wrong.status, 0);
-  assert.match(wrong.stderr, /Target main does not match/);
-  f.git(['--git-dir', f.target, 'update-ref', 'refs/heads/main', f.sha]);
+  assert.match(missing.stderr, /Target main is missing/);
+  f.git(['-C', join(f.destination, '..', 'source'), 'push', f.target, 'main']);
   const enabled = f.run(['--upload-only'], { MOCK_ACTIONS: 'true' });
   assert.notEqual(enabled.status, 0);
   assert.match(enabled.stderr, /Disable target Actions/);
@@ -301,18 +359,18 @@ test('pioneer script rejects missing, empty, or directory SARIF paths before API
   }
 });
 
-test('pioneer script requires an explicit analyzed SHA instead of using latest main', t => {
+test('pioneer script does not require an analyzed SHA in upload-only mode', t => {
   const f = fixture(t);
   const configuredScript = join(f.destination, '..', 'no-sha-fork.sh');
   writeFileSync(configuredScript, readFileSync(script, 'utf8')
     .replace(/^ANALYZED_SHA=.*$/m, "ANALYZED_SHA=''"));
+  f.git(['-C', join(f.destination, '..', 'source'), 'push', f.target, 'main']);
   const result = spawnSync('bash', [
-    configuredScript, '--confirm-settings', '--sarif', f.sarifFile,
-    '--directory', f.destination,
+    configuredScript, '--upload-only', '--confirm-settings', '--sarif', f.sarifFile,
+    '--source', 'example/source', '--target', 'example/target', '--directory', f.destination,
   ], { env: f.env, encoding: 'utf8' });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /full 40-character/);
-  assert.equal(existsSync(f.env.MOCK_API_LOG), false);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD_BODY, 'utf8')).commit_sha, f.sha);
 });
 
 test('pioneer script requires settings confirmation and supports copying main only', t => {

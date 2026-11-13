@@ -11,6 +11,7 @@ export PAGER=cat
 
 # Edit these values before running from the repository root.
 SOURCE_REPO='hijigoo/github-workflow-sample'
+SOURCE_BRANCH='handson'
 TARGET_REPO='haewons-emu-org/github-workflow-sample'
 # Keep this SHA paired with the local SARIF's analyzed commit.
 ANALYZED_SHA='7e374656389ab24b71af8e409dbd434346278ace'
@@ -30,9 +31,10 @@ usage() {
 Usage (from the repository root): bash ./scripts/linux/fork.sh
 Edit the configuration at the top first. Optional overrides:
   bash ./scripts/linux/fork.sh --source OWNER/REPO --target ORG/REPO \
-  --commit FULL_SHA --sarif EXISTING_FILE --directory NEW_PATH \
+  --source-branch BRANCH --directory NEW_PATH \
   [--review-branch BRANCH] \
   --confirm-settings
+  bash ./scripts/linux/fork.sh --commit FULL_SHA --sarif EXISTING_FILE
   bash ./scripts/linux/fork.sh --upload-only
 
 Copy a public github.com repository into an empty GHEC organization repository.
@@ -40,18 +42,20 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-Upload the existing local SARIF after verifying the copied main commit.
-The local file is not modified or downloaded.
-ANALYZED_SHA must be the full commit SHA analyzed in that SARIF; it becomes
-target main. Optionally copy one review branch. No source Code scanning API
-access or new analysis is required.
+By default, copy the tip of SOURCE_BRANCH (handson) to target main without
+uploading SARIF. An existing SARIF may describe an older analyzed commit.
+--commit overrides branch selection: copy that analyzed SHA to target main
+and upload the existing local SARIF. It must match the SARIF's analyzed commit.
+The local SARIF is not modified or downloaded. Optionally copy one review
+branch descending from the copied commit. No source Code scanning API access
+or new analysis is required.
 
 --confirm-settings confirms that enterprise/organization fork policies,
 new-fork automation restrictions, repository settings, and Code Security
 licensing/costs were reviewed.
 The script also checks target visibility, Actions, and CodeQL default setup.
 Existing local paths and nonempty targets are refused during copying.
---upload-only skips copying and requires target main to match ANALYZED_SHA.
+--upload-only skips copying and uploads SARIF to current target main.
 SARIF upload requires Code scanning write permission and gzip, base64, tr,
 mktemp, and sleep. No force-push or automatic repository cleanup.
 HELP
@@ -62,15 +66,15 @@ git_safe() {
 }
 
 upload_sarif() (
-  local target="$1" commit="$2" sarif_file="$3"
-  local remote_sha actions_state codeql_state payload upload_id
+  local target="$1" sarif_file="$2"
+  local commit actions_state codeql_state payload upload_id
   local response state processing_errors attempt
 
-  remote_sha=$(git_safe ls-remote \
+  commit=$(git_safe ls-remote \
     "https://github.com/${target}.git" refs/heads/main)
-  remote_sha="${remote_sha%%$'\t'*}"
-  [[ "${remote_sha}" == "${commit}" ]] ||
-    err "Target main does not match the analyzed SHA; refusing SARIF upload."
+  commit="${commit%%$'\t'*}"
+  [[ "${commit}" =~ ^[0-9a-f]{40}$ ]] ||
+    err "Target main is missing or unavailable; refusing SARIF upload."
   actions_state=$(gh api --hostname github.com \
     "repos/${target}/actions/permissions" --jq '.enabled')
   codeql_state=$(gh api --hostname github.com \
@@ -124,6 +128,7 @@ upload_sarif() (
 
 main() {
   local source="${SOURCE_REPO}" target="${TARGET_REPO}"
+  local source_branch="${SOURCE_BRANCH}" fixed_commit=false
   local commit="${ANALYZED_SHA}" directory="${LOCAL_DIRECTORY}"
   local review_branch="${REVIEW_BRANCH}" confirmed="${SETTINGS_CONFIRMED}"
   local option metadata owner_type visibility archived response
@@ -150,14 +155,15 @@ main() {
         upload_only=true
         shift
         ;;
-      --source|--target|--commit|--sarif|--directory|--review-branch)
+      --source|--source-branch|--target|--commit|--sarif|--directory|--review-branch)
         if (( $# < 2 )) || [[ -z "$2" || "$2" == --* ]]; then
           err "${option} requires a value."
         fi
         case "${option}" in
           --source) source="$2" ;;
+          --source-branch) source_branch="$2" ;;
           --target) target="$2" ;;
-          --commit) commit="$2" ;;
+          --commit) commit="$2"; fixed_commit=true ;;
           --sarif) sarif_file="$2" ;;
           --directory) directory="$2" ;;
           --review-branch) review_branch="$2" ;;
@@ -175,22 +181,33 @@ main() {
   [[ "${target}" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]] ||
     err "--target must be ORG/REPO, not a URL."
   [[ "${source}" != "${target}" ]] || err "Source and target must differ."
-  [[ "${commit}" =~ ^[0-9a-f]{40}$ ]] ||
-    err "--commit must be the full 40-character lowercase analyzed SHA."
+  if [[ "${fixed_commit}" == true && "${upload_only}" == false ]]; then
+    [[ "${commit}" =~ ^[0-9a-f]{40}$ ]] ||
+      err "--commit must be the full 40-character lowercase analyzed SHA."
+  fi
   [[ -n "${directory}" && "${directory}" != -* ]] ||
     err "--directory must be a new local path."
   if [[ "${upload_only}" == false ]]; then
     [[ ! -e "${directory}" && ! -L "${directory}" ]] ||
       err "Local destination already exists; choose a new path."
   fi
-  [[ -f "${sarif_file}" && -r "${sarif_file}" && -s "${sarif_file}" ]] ||
-    err "Local SARIF must be an existing readable, nonempty file: ${sarif_file}"
+  if [[ "${fixed_commit}" == true || "${upload_only}" == true ]]; then
+    [[ -f "${sarif_file}" && -r "${sarif_file}" && -s "${sarif_file}" ]] ||
+      err "Local SARIF must be an existing readable, nonempty file: ${sarif_file}"
+  fi
 
   command -v git >/dev/null || err "Install Git first."
   command -v gh >/dev/null || err "Install GitHub CLI (gh) first."
-  for tool in gzip base64 tr mktemp sleep; do
-    command -v "${tool}" >/dev/null || err "Install ${tool} first."
-  done
+  if [[ "${fixed_commit}" == true || "${upload_only}" == true ]]; then
+    for tool in gzip base64 tr mktemp sleep; do
+      command -v "${tool}" >/dev/null || err "Install ${tool} first."
+    done
+  else
+    [[ -n "${source_branch}" ]] ||
+      err "--source-branch must be a valid branch name."
+    git_safe check-ref-format --branch "${source_branch}" >/dev/null ||
+      err "--source-branch must be a valid branch name."
+  fi
   if [[ -n "${review_branch}" ]]; then
     [[ "${review_branch}" != main ]] ||
       err "The review branch must differ from main."
@@ -199,7 +216,7 @@ main() {
 
   gh auth status --hostname github.com
   if [[ "${upload_only}" == true ]]; then
-    upload_sarif "${target}" "${commit}" "${sarif_file}"
+    upload_sarif "${target}" "${sarif_file}"
     return 0
   fi
   [[ "$(gh api --hostname github.com "repos/${source}" \
@@ -279,14 +296,23 @@ main() {
   [[ "${codeql_state}" == not-configured ]] ||
     err "Disable target CodeQL default setup before copying."
 
-  printf 'Source: %s\nTarget: %s\nAnalyzed SHA: %s\nLocal path: %s\n' \
-    "${source_url}" "${target_url}" "${commit}" "${directory}"
-  printf 'Using local SARIF: %s\n' "${sarif_file}"
+  printf 'Source: %s\nTarget: %s\nLocal path: %s\n' \
+    "${source_url}" "${target_url}" "${directory}"
+  if [[ "${fixed_commit}" == true ]]; then
+    printf 'Analyzed SHA: %s\nUsing local SARIF: %s\n' "${commit}" "${sarif_file}"
+  else
+    printf 'Source branch: %s\n' "${source_branch}"
+  fi
   git_safe clone --no-checkout --no-tags "${source_url}" "${directory}"
+  if [[ "${fixed_commit}" == false ]]; then
+    commit=$(git_safe -C "${directory}" rev-parse \
+      --verify "refs/remotes/origin/${source_branch}^{commit}") ||
+      err "Source branch not found: ${source_branch}. No code was pushed."
+  fi
   actual_commit=$(git_safe -C "${directory}" rev-parse \
     --verify "${commit}^{commit}")
   [[ "${actual_commit}" == "${commit}" ]] ||
-    err "Analyzed commit did not resolve exactly."
+    err "Copy commit did not resolve exactly."
   git_safe -C "${directory}" checkout --detach "${commit}"
 
   refspecs=('HEAD:refs/heads/main')
@@ -295,10 +321,10 @@ main() {
       --verify "refs/remotes/origin/${review_branch}^{commit}")
     if ! git_safe -C "${directory}" merge-base --is-ancestor \
       "${commit}" "${review_commit}"; then
-      err "Review branch must descend from the analyzed commit."
+      err "Review branch must descend from the copied commit."
     fi
     [[ "${review_commit}" != "${commit}" ]] ||
-      err "Review branch has no commits beyond the analyzed commit."
+      err "Review branch has no commits beyond the copied commit."
     refspecs+=(
       "${review_commit}:refs/heads/${review_branch}"
     )
@@ -318,17 +344,23 @@ main() {
   remote_sha=$(git_safe ls-remote "${target_url}" refs/heads/main)
   remote_sha="${remote_sha%%$'\t'*}"
   [[ "${remote_sha}" == "${commit}" ]] ||
-    err "Remote main does not match the analyzed SHA; inspect the target."
+    err "Remote main does not match the copied SHA; inspect the target."
   default_branch=$(gh api --hostname github.com "repos/${target}" \
     --jq '.default_branch')
   [[ "${default_branch}" == main ]] ||
     err "Copy completed, but set the target default branch to main manually."
 
-  upload_sarif "${target}" "${commit}" "${sarif_file}"
+  if [[ "${fixed_commit}" == true ]]; then
+    upload_sarif "${target}" "${sarif_file}"
+  else
+    printf 'SARIF upload skipped: source branch copied; existing SARIF is historical analysis data.\n'
+  fi
 
   printf '\nCopy verified: https://github.com/%s\nmain: %s\n' \
     "${target}" "${remote_sha}"
-  printf 'Local SARIF file (unchanged): %s\n' "${sarif_file}"
+  if [[ "${fixed_commit}" == true ]]; then
+    printf 'Local SARIF file (unchanged): %s\n' "${sarif_file}"
+  fi
   if [[ -n "${review_branch}" ]]; then
     printf 'Review branch: %s (%s)\n' "${review_branch}" "${review_commit}"
   fi

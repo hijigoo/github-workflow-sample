@@ -1,7 +1,8 @@
 # 실습 기준 저장소 사전 준비 가이드
 
 GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장소를 직접 포크할 수 없습니다.
-조직 오너가 Pioneer 역할로 실습 정책·권한을 설정하고, 공개 원본을 기업 내부 조직의 독립 기준 저장소로 복사해 기존 SARIF를 등록합니다.
+조직 오너가 Pioneer 역할로 실습 정책·권한을 설정하고, 공개 원본의 `handson` 브랜치를 기업 내부 조직의 독립 기준 저장소로 복사합니다.
+커밋된 기존 SARIF는 웹에서 읽을 분석 자료로 사용하며, 기준 저장소 생성 시 자동 등록하지 않습니다.
 이 가이드의 범위는 실습 환경 설정과 기준 저장소 구성·확인까지입니다.
 실습자 저장소 포크·준비와 01~04 실습 권한 확인은
 [00. 실습을 위한 저장소 사전 준비](handson/00-preparation.md)에서 진행합니다.
@@ -15,8 +16,8 @@ GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장�
 ## 준비 흐름
 
 1. Pioneer가 조직 설정·권한과 도구를 확인합니다.
-2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 기준 저장소 생성·코드 복사·기존 SARIF 등록을 수행합니다.
-3. 기준 저장소의 분석 SHA·보안 경고·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
+2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 원본 `handson`을 기준 저장소의 `main`으로 복사합니다.
+3. 복사된 커밋·SARIF 파일·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
 
 > [!IMPORTANT]
 > 준비 스크립트와 SARIF 등록에는 Actions runner를 사용하지 않습니다.
@@ -48,7 +49,7 @@ Enterprise 정책으로 잠긴 항목은 기업 관리자에게 요청하며, �
 | [ ] | Copilot Seat | 조직 `Settings → Copilot → Access` | 실습 대상 사용자 또는 팀에 Seat를 부여합니다. 전체 조직에 일괄 구매하지 않고 실습 대상과 승인된 비용을 확인합니다. |
 | [ ] | Copilot 새 세션과 Cloud | 조직 `Settings → Copilot → Policies`; `Settings → Copilot → Cloud → Repository access` | `Copilot in the cloud`를 `Enabled`로 설정하고 실습 대상 저장소 접근을 허용합니다. 선택 저장소 방식이면 새 실습자 포크도 목록에 포함해야 합니다. 실습 계정으로 우측 상단의 Copilot 아이콘을 클릭한 뒤 [New Session](https://github.com/copilot) 메뉴를 열고, 실습 저장소를 연결해 `Environment → Cloud` 선택 가능 여부를 확인합니다. |
 | [ ] | Issue·PR·댓글 | 저장소 `Settings → General → Features → Issues`; `Settings → Collaborators and teams` | 실습자 포크의 Issues를 활성화하고 포크를 생성한 실습 계정에 작업에 필요한 쓰기 권한이 있는지 확인합니다. 실습 계정으로 GitHub 웹에서 Issue 생성·PR 작성·댓글 게시가 실제로 되는지 사전 검증합니다. 기준 저장소에는 읽기 권한을 제공하며 PR의 base와 head는 실습자 포크를 사용합니다. |
-| [ ] | 작업 브랜치 쓰기 | 저장소 `Settings → Rules → Rulesets`와 `Settings → Branches`; 조직 `Settings → Repository → Rulesets` | 실습자 포크의 작업 브랜치 생성·push를 막는 규칙이 없는지 확인합니다. 분석 SHA의 `main`은 유지하고, 조직 규칙을 전체 해제하지 말고 실습 대상·브랜치 범위를 확인합니다. |
+| [ ] | 작업 브랜치 쓰기 | 저장소 `Settings → Rules → Rulesets`와 `Settings → Branches`; 조직 `Settings → Repository → Rulesets` | 실습자 포크의 작업 브랜치 생성·push를 막는 규칙이 없는지 확인합니다. 기준 저장소에서 복사된 `main`은 유지하고, 조직 규칙을 전체 해제하지 말고 실습 대상·브랜치 범위를 확인합니다. |
 | [ ] | GHAS·Code Security와 SARIF | 조직 `Settings → Advanced Security → Configurations → Repositories`; 저장소 `Settings → Advanced Security → Code Security` | 기존 GHAS 또는 Code Security 라이선스·비용을 확인하고, Code Security가 활성화되는 보안 구성을 실습 대상 저장소에 적용합니다. 생성된 실습자 포크에도 적용됐는지 확인합니다. CodeQL default setup·자동 분석은 비활성화 상태로 유지하고, 준비 담당자의 SARIF 등록 권한과 실습자의 Code scanning 열람 권한을 확인합니다. |
 | [ ] | Cloud 비용 승인 | 조직 또는 Enterprise의 `Settings → Billing and licensing → Budgets and alerts` | Cloud 사용 예산과 과금 주체를 확인합니다. 조직 오너에게 청구 관리 권한이 없으면 해당 청구 관리자에게 승인을 요청합니다. |
 
@@ -107,7 +108,7 @@ Actions 비활성화만으로 모든 진입점의 실행 환경이 확인되는 
 | OS | 설치할 도구 |
 |----|-------------|
 | Windows | GitHub CLI (`gh`), Git CLI, PowerShell 7.4 이상 (`pwsh`) |
-| macOS·Linux | GitHub CLI (`gh`), Git CLI, Bash, `gzip`, `base64`, `tr`, `mktemp`, `sleep` |
+| macOS·Linux | GitHub CLI (`gh`), Git CLI, Bash. SARIF 등록 시에만 `gzip`, `base64`, `tr`, `mktemp`, `sleep` 추가 |
 
 이 저장소의 코드와 커밋된 [code-scanning.sarif](../code-scanning.sarif)를 준비 PC에 내려받습니다.
 SARIF는 따로 생성하거나 새 분석으로 만들지 않습니다.
@@ -155,6 +156,7 @@ macOS·Linux:
 
 ```bash
 bash ./scripts/linux/fork.sh \
+  --source-branch handson \
   --target ORG/github-workflow-sample \
   --directory ./github-workflow-sample \
   --confirm-settings
@@ -164,16 +166,22 @@ Windows:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\win\fork.ps1 `
+  -SourceBranch handson `
   -TargetRepo ORG/github-workflow-sample `
   -LocalDirectory ./github-workflow-sample `
   -ConfirmSettings
 ```
 
-기본 공개 원본은 `hijigoo/github-workflow-sample`이며 분석 SHA는
-`7e374656389ab24b71af8e409dbd434346278ace`입니다.
-스크립트는 이 SHA의 코드를 대상 `main`으로 복사하고 현재 작업 폴더의
-`./code-scanning.sarif`를 등록합니다. SARIF와 분석 SHA는 짝을 유지합니다.
-스크립트가 둘의 일치를 자동 검증한다고 가정하지 않습니다.
+기본 공개 원본은 `hijigoo/github-workflow-sample`이며 기본 원본 브랜치는 `handson`입니다.
+스크립트는 clone 시점의 원본 브랜치 커밋을 대상 `main`으로 복사하고, 기존 SARIF의 자동 업로드는 생략합니다.
+원본 브랜치에 포함된 변경만 복사되므로 로컬에서 수정한 가이드는 원격 `handson`에 반영돼 있어야 합니다.
+
+기존 분석 커밋의 코드와 SARIF를 함께 준비해야 한다면 별도의 빈 대상 저장소에
+`--commit FULL_SHA` 또는 `-AnalyzedSha FULL_SHA`를 명시합니다. 이 옵션은 원본 브랜치 선택보다 우선하며 고정 커밋 복사와 SARIF 업로드를 수행합니다.
+기본 실습용 기준 저장소를 이 방식으로 덮어쓰지 않으며, SARIF와 분석 SHA의 짝은 준비 담당자가 확인합니다.
+
+복사된 SARIF를 신규 저장소의 현재 `main`에 바로 표시하려면
+[04번의 선택 등록 실습](handson/04-security.md#선택-실습-기존-sarif-등록)의 `--upload-only` 또는 `-UploadOnly`를 사용합니다.
 
 새 대상에는 Actions와 CodeQL default setup을 비활성화하고 필요한 Code Security 설정을 적용합니다.
 기존 대상 설정은 임의로 바꾸지 않으며 비어 있지 않은 대상을 덮어쓰지 않습니다.
@@ -181,15 +189,16 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 
 ### 생성 결과와 포크 정책 확인
 
-* 실행 출력의 `SARIF processing complete:`와 `Copy verified:` 확인
-* 기준 저장소 `main`이 분석 SHA와 일치하는지 확인
-* 저장소 Security의 Code scanning에서 결과·대상 커밋 확인
+* 실행 출력의 `Source branch: handson`, `SARIF upload skipped:`, `Copy verified:` 확인
+* 기준 저장소 `main`이 실행 출력의 복사된 커밋과 일치하는지 확인
+* 기준 저장소에 복사된 SARIF 파일을 GitHub 웹에서 열 수 있는지 확인
 * Actions와 CodeQL 자동 분석이 비활성화돼 있는지 확인
 * 기업·조직 정책과 저장소 설정에서 실습 대상 조직으로 private 저장소 포크가 허용되는지 확인
 
 기준 저장소의 `main`에는 추가 커밋하지 않습니다.
-Code scanning 화면이 비어 있으면 권한·필터·업로드 처리 상태를 확인하며,
-API 접수나 빈 목록만으로 성공을 판단하지 않습니다.
+기본 준비에서는 SARIF를 자동 등록하지 않으므로 Code scanning 경고 목록이 비어 있어도 정상입니다.
+별도로 SARIF를 등록한 경우에만 `SARIF processing complete:`와 웹 결과의 등록 대상 커밋을 확인하며,
+API 접수만으로 등록 성공을 판단하지 않습니다.
 
 ## 3. 준비 중 문제가 생겼을 때
 
@@ -202,8 +211,9 @@ API 접수나 빈 목록만으로 성공을 판단하지 않습니다.
 | 조직·저장소 403 또는 404 | 활성 계정, 조직 가입, 생성·관리 권한과 조직 인증 확인 |
 | Code Security 활성화·등록 거부 | 라이선스·비용 승인·정책과 Code scanning 쓰기 권한 확인 |
 | 내부 포크 허용 설정 불가 | 기업·조직·기준 저장소의 정책과 허용 가능한 대상 조직을 관리자에게 확인 |
-| 대상 저장소 또는 로컬 폴더가 이미 있음 | 덮어쓰지 않고 상태 확인. 코드 복사가 끝났다면 업로드 전용 모드 검토 |
-| SHA 불일치 | 기준 저장소 `main`과 제공된 분석 SHA를 대조. 임의 SHA로 SARIF 등록하지 않음 |
+| 대상 저장소 또는 로컬 폴더가 이미 있음 | 덮어쓰지 않고 복사 결과 확인. SARIF 등록만 할 때는 `--upload-only` 또는 `-UploadOnly` 사용 |
+| 원본 브랜치가 없음 | 원본 저장소의 `handson` 존재 여부와 `--source-branch` 또는 `-SourceBranch` 값 확인 |
+| SHA 불일치 | 고정 SHA 복사 모드에서는 대상 `main`과 복사할 SHA의 일치 확인 |
 | 업로드 처리 대기·실패 | 업로드 ID의 기존 처리 상태를 확인한 뒤 재시도 |
 
 처리 상태는 실제 저장소와 업로드 ID로 확인합니다.

@@ -64,6 +64,12 @@ function fixture(t) {
   git(['-C', source, 'commit', '--allow-empty', '-m', 'Review fixture']);
   const reviewSha = git(['-C', source, 'rev-parse', 'HEAD']);
   git(['-C', source, 'switch', 'main']);
+  git(['-C', source, 'switch', '-c', 'handson']);
+  writeFileSync(join(source, 'handson-only.txt'), 'Hands-on branch content\n');
+  git(['-C', source, 'add', 'handson-only.txt']);
+  git(['-C', source, 'commit', '-m', 'Hands-on fixture']);
+  const handsonSha = git(['-C', source, 'rev-parse', 'HEAD']);
+  git(['-C', source, 'switch', 'main']);
   git(['init', '--bare', '--initial-branch=main', target]);
   git(['config', '--global', `url.${source.replaceAll('\\', '/')}.insteadOf`, 'https://github.com/example/source.git']);
   git(['config', '--global', `url.${target.replaceAll('\\', '/')}.insteadOf`, 'https://github.com/example/target.git']);
@@ -140,13 +146,13 @@ else fail('Unexpected API request: ' + JSON.stringify(a));
     writeFileSync(join(bin, 'gh'), `#!${process.execPath}\nrequire(${JSON.stringify(mockFile)});\n`, { mode: 0o700 });
   }
 
-  function run(extra = [], overrides = {}, { native = false, fastPoll = false, scriptPath = script } = {}) {
+  function run(extra = [], overrides = {}, { native = false, fastPoll = false, scriptPath = script, branchCopy = false } = {}) {
     const args = native ? [
       '-SourceRepo', 'example/source', '-TargetRepo', 'example/target',
-      '-AnalyzedSha', sha, '-SarifFile', sarifFile, '-LocalDirectory', destination,
+      ...(branchCopy ? [] : ['-AnalyzedSha', sha]), '-SarifFile', sarifFile, '-LocalDirectory', destination,
     ] : [
       '--source', 'example/source', '--target', 'example/target',
-      '--commit', sha, '--sarif', sarifFile, '--directory', destination,
+      ...(branchCopy ? [] : ['--commit', sha]), '--sarif', sarifFile, '--directory', destination,
     ];
     for (const option of extra.filter(value => value.startsWith('--'))) {
       const index = args.indexOf(option);
@@ -175,8 +181,75 @@ exit $LASTEXITCODE
   function assertCleanTemp() {
     assert.deepEqual(readdirSync(temp), [], 'Native payloads and hooks directories must be cleaned');
   }
-  return { root, run, git, sha, reviewSha, source, target, destination, sarifFile, env, requests, seedTarget, assertCleanTemp };
+  return { root, run, git, sha, reviewSha, handsonSha, source, target, destination, sarifFile, env, requests, seedTarget, assertCleanTemp };
 }
+
+runtimeTest('PowerShell uploads SARIF onto current main without analyzed commit history', t => {
+  for (const native of [false, true]) {
+    const f = fixture(t);
+    f.git(['-C', f.source, 'switch', '--orphan', 'fresh-main']);
+    f.git(['-C', f.source, 'commit', '--allow-empty', '-m', 'New repository fixture']);
+    const freshSha = f.git(['-C', f.source, 'rev-parse', 'HEAD']);
+    f.seedTarget(freshSha);
+    const original = readFileSync(f.sarifFile);
+    const result = f.run(native ? ['-UploadOnly'] : ['--upload-only'],
+      {}, { native, branchCopy: true });
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8'));
+    assert.equal(payload.commit_sha, freshSha);
+    assert.equal(payload.ref, 'refs/heads/main');
+    assert.deepEqual(gunzipSync(Buffer.from(payload.sarif, 'base64')), original);
+    assert.deepEqual(readFileSync(f.sarifFile), original);
+    assert.equal(existsSync(f.destination), false);
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), freshSha);
+    assert.ok(f.requests().every(a => a[0] === 'auth' || a.some(v => v.startsWith('repos/example/target/'))));
+    f.assertCleanTemp();
+  }
+});
+
+runtimeTest('PowerShell copies handson to main by default without requiring or uploading SARIF', t => {
+  for (const native of [false, true]) {
+    const f = fixture(t);
+    rmSync(f.sarifFile);
+    const result = f.run([], {}, { native, branchCopy: true });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
+    assert.equal(f.git(['--git-dir', f.target, 'show', 'main:handson-only.txt']), 'Hands-on branch content');
+    assert.equal(f.git(['--git-dir', f.target, 'for-each-ref', '--format=%(refname)']), 'refs/heads/main');
+    assert.match(result.stdout, /Source branch: handson/);
+    assert.match(result.stdout, /SARIF upload skipped:/);
+    assert.equal(f.requests().some(a => a.some(v => v.includes('/code-scanning/sarifs'))), false);
+    assert.equal(existsSync(f.env.MOCK_UPLOAD), false);
+    f.assertCleanTemp();
+  }
+});
+
+runtimeTest('PowerShell allows another source branch without mislabelling existing SARIF', t => {
+  for (const native of [false, true]) {
+    const f = fixture(t);
+    const original = readFileSync(f.sarifFile);
+    const result = f.run(native ? ['-SourceBranch', 'review/sort'] : ['--source-branch', 'review/sort'],
+      {}, { native, branchCopy: true });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.reviewSha);
+    assert.deepEqual(readFileSync(f.sarifFile), original);
+    assert.equal(existsSync(f.env.MOCK_UPLOAD), false);
+    f.assertCleanTemp();
+  }
+});
+
+runtimeTest('PowerShell rejects invalid or missing source branches without pushing', t => {
+  for (const branch of ['bad..branch', 'missing']) {
+    const f = fixture(t);
+    const result = f.run(['--source-branch', branch], {}, { branchCopy: true });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /git exited|Source branch not found/);
+    assert.equal(f.git(['ls-remote', f.target]), '');
+    assert.equal(existsSync(f.env.MOCK_UPLOAD), false);
+    if (branch === 'bad..branch') assert.equal(f.requests().length, 0);
+    f.assertCleanTemp();
+  }
+});
 
 runtimeTest('PowerShell parser accepts the script and help needs no GitHub access', t => {
   const f = fixture(t);
@@ -246,6 +319,7 @@ runtimeTest('PowerShell edited defaults work without arguments and explicit conf
     const f = fixture(t);
     const settings = {
       SourceRepo: 'example/source',
+      SourceBranch: 'main',
       TargetRepo: 'example/target',
       AnalyzedSha: f.sha,
       SarifFile: f.sarifFile,
@@ -334,9 +408,9 @@ runtimeTest('PowerShell refuses unsafe targets and visible native/API failures b
   }
 });
 
-runtimeTest('PowerShell upload-only refuses SHA mismatches and enabled automation without posting', t => {
+runtimeTest('PowerShell upload-only refuses missing main and enabled automation without posting', t => {
   for (const c of [
-    { seed: false, env: {}, error: /does not match the analyzed SHA/ },
+    { seed: false, env: {}, error: /Target main is missing/ },
     { seed: true, env: { MOCK_ACTIONS: 'true' }, error: /Disable target Actions and CodeQL/ },
     { seed: true, env: { MOCK_CODEQL: 'configured' }, error: /Disable target Actions and CodeQL/ },
   ]) {

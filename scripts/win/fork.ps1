@@ -5,7 +5,7 @@
 
 <#
 .SYNOPSIS
-    Copy a public repository and upload an existing SARIF without Git Bash.
+    Copy a public repository branch or analyzed commit without Git Bash.
 .DESCRIPTION
     Native PowerShell equivalent of fork.sh. Requires PowerShell 7.4+, Git,
     and GitHub CLI. Uses .NET for gzip, base64, and temporary files.
@@ -13,26 +13,29 @@
     or supply the same --options as fork.sh.
 .PARAMETER SourceRepo
     Public source repository in OWNER/REPO form.
+.PARAMETER SourceBranch
+    Source branch copied to target main without uploading SARIF; defaults to handson.
 .PARAMETER TargetRepo
     Private or internal target repository in ORG/REPO form.
 .PARAMETER AnalyzedSha
-    Full lowercase commit SHA analyzed in the local SARIF.
+    Explicitly supplying this selects fixed-commit copying with SARIF upload.
+    Must match the local SARIF when copying an analyzed commit.
 .PARAMETER SarifFile
     Existing readable, nonempty SARIF file; never modified.
 .PARAMETER LocalDirectory
     New local clone path (may already exist with -UploadOnly).
 .PARAMETER ReviewBranch
-    Optional review branch descending from the analyzed commit.
+    Optional review branch descending from the copied commit.
 .PARAMETER SettingsConfirmed
     Confirmation that policies, safety settings, licensing, and costs were reviewed.
 .PARAMETER ConfirmSettings
     Confirm settings for this invocation.
 .PARAMETER UploadOnly
-    Skip copying and upload only if target main matches the analyzed commit.
+    Skip copying and upload SARIF to current target main.
 .PARAMETER Help
     Display usage without contacting GitHub.
 .PARAMETER Arguments
-    Optional --source, --target, --commit, --sarif, --directory,
+    Optional --source, --source-branch, --target, --commit, --sarif, --directory,
     --review-branch, --confirm-settings, --upload-only, or --help arguments.
 .EXAMPLE
     ./scripts/win/fork.ps1 -UploadOnly -ConfirmSettings
@@ -45,7 +48,11 @@
 param(
     # Edit these defaults before running from the repository root.
     [Parameter(Mandatory = $false)]
+    [Alias('source')]
     [string]$SourceRepo = 'hijigoo/github-workflow-sample',
+    [Parameter(Mandatory = $false)]
+    [Alias('source-branch')]
+    [string]$SourceBranch = 'handson',
     [Parameter(Mandatory = $false)]
     [string]$TargetRepo = 'haewons-emu-org/inquiry-training-base',
     # Keep this SHA paired with the local SARIF's analyzed commit.
@@ -71,6 +78,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$CopyAnalyzedCommit = $PSBoundParameters.ContainsKey('AnalyzedSha')
 
 #region Functions
 function Show-Usage {
@@ -84,13 +92,14 @@ function Show-Usage {
     Write-Host @'
 Usage (from the repository root): .\scripts\win\fork.ps1
 Edit the parameter defaults at the top first. PowerShell overrides:
-  .\scripts\win\fork.ps1 -SourceRepo OWNER/REPO -TargetRepo ORG/REPO -AnalyzedSha FULL_SHA `
-    -SarifFile EXISTING_FILE -LocalDirectory NEW_PATH `
+  .\scripts\win\fork.ps1 -SourceRepo OWNER/REPO -TargetRepo ORG/REPO -SourceBranch BRANCH `
+    -LocalDirectory NEW_PATH `
     [-ReviewBranch BRANCH] -ConfirmSettings
+  .\scripts\win\fork.ps1 -AnalyzedSha FULL_SHA -SarifFile EXISTING_FILE
   .\scripts\win\fork.ps1 -UploadOnly
 The equivalent fork.sh-style --options are also accepted:
-  .\scripts\win\fork.ps1 --source OWNER/REPO --target ORG/REPO --commit FULL_SHA `
-    --sarif EXISTING_FILE --directory NEW_PATH [--review-branch BRANCH] `
+  .\scripts\win\fork.ps1 --source OWNER/REPO --target ORG/REPO --source-branch BRANCH `
+    --directory NEW_PATH [--review-branch BRANCH] `
     --confirm-settings
   .\scripts\win\fork.ps1 --upload-only
 
@@ -100,18 +109,20 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-Upload the existing local SARIF after verifying the copied main commit.
-The local file is not modified or downloaded.
-AnalyzedSha must be the full commit SHA analyzed in that SARIF; it becomes
-target main. Optionally copy one review branch. No source Code scanning API
-access or new analysis is required.
+By default, copy the tip of SourceBranch (handson) to target main without
+uploading SARIF. An existing SARIF may describe an older analyzed commit.
+-AnalyzedSha / --commit overrides branch selection: copy that analyzed SHA
+to target main and upload the existing local SARIF. It must match that SARIF.
+The local SARIF is not modified or downloaded. Optionally copy one review
+branch descending from the copied commit. No source Code scanning API access
+or new analysis is required.
 
 --confirm-settings confirms that enterprise/organization fork policies,
 new-fork automation restrictions, repository settings, and Code Security
 licensing/costs were reviewed.
 The script also checks target visibility, Actions, and CodeQL default setup.
 Existing local paths and nonempty targets are refused during copying.
---upload-only skips copying and requires target main to match ANALYZED_SHA.
+--upload-only skips copying and uploads SARIF to current target main.
 SARIF upload requires Code scanning write permission.
 No force-push or automatic repository cleanup.
 '@
@@ -166,11 +177,12 @@ function Invoke-SafeGit {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [string[]]$ArgumentList
+        [string[]]$ArgumentList,
+        [string]$FailureMessage = 'Native command failed.'
     )
     Invoke-NativeCommand -Program git -ArgumentList (
         @('-c', "core.hooksPath=$script:HooksDirectory") + $ArgumentList
-    )
+    ) -FailureMessage $FailureMessage
 }
 
 function Invoke-Gh {
@@ -199,14 +211,13 @@ function Send-Sarif {
     [OutputType([void])]
     param(
         [string]$Target,
-        [string]$Commit,
         [string]$SarifFile
     )
-    $RemoteSha = ((Invoke-SafeGit -ArgumentList @(
+    $Commit = ((Invoke-SafeGit -ArgumentList @(
         'ls-remote', "https://github.com/$Target.git", 'refs/heads/main'
     )) -split "`t")[0]
-    if ($RemoteSha -cne $Commit) {
-        throw 'Target main does not match the analyzed SHA; refusing SARIF upload.'
+    if ($Commit -cnotmatch '^[0-9a-f]{40}$') {
+        throw 'Target main is missing or unavailable; refusing SARIF upload.'
     }
     $ActionsState = Invoke-Gh -ArgumentList @(
         'api', '--hostname', 'github.com', "repos/$Target/actions/permissions", '--jq', '.enabled'
@@ -285,6 +296,8 @@ function Invoke-RepositoryCopy {
     param([string[]]$Options)
 
     $Source = $SourceRepo
+    $Branch = $SourceBranch
+    $FixedCommit = $CopyAnalyzedCommit
     $Target = $TargetRepo
     $Commit = $AnalyzedSha
     $Directory = $LocalDirectory
@@ -296,7 +309,7 @@ function Invoke-RepositoryCopy {
             { $_ -in '--help', '-h' } { Show-Usage; return }
             '--confirm-settings' { $Confirmed = $true }
             '--upload-only' { $UploadOnly = $true }
-            { $_ -in '--source', '--target', '--commit', '--sarif', '--directory', '--review-branch' } {
+            { $_ -in '--source', '--source-branch', '--target', '--commit', '--sarif', '--directory', '--review-branch' } {
                 if ($Index + 1 -ge $Options.Count -or
                     [string]::IsNullOrEmpty($Options[$Index + 1]) -or
                     $Options[$Index + 1].StartsWith('--')) {
@@ -305,8 +318,9 @@ function Invoke-RepositoryCopy {
                 $Index++
                 switch -CaseSensitive ($Option) {
                     '--source' { $Source = $Options[$Index] }
+                    '--source-branch' { $Branch = $Options[$Index] }
                     '--target' { $Target = $Options[$Index] }
-                    '--commit' { $Commit = $Options[$Index] }
+                    '--commit' { $Commit = $Options[$Index]; $FixedCommit = $true }
                     '--sarif' { $SarifFile = $Options[$Index] }
                     '--directory' { $Directory = $Options[$Index] }
                     '--review-branch' { $ReviewBranch = $Options[$Index] }
@@ -325,7 +339,7 @@ function Invoke-RepositoryCopy {
         throw '--target must be ORG/REPO, not a URL.'
     }
     if ($Source -ceq $Target) { throw 'Source and target must differ.' }
-    if ($Commit -cnotmatch '^[0-9a-f]{40}$') {
+    if ($FixedCommit -and -not $UploadOnly -and $Commit -cnotmatch '^[0-9a-f]{40}$') {
         throw '--commit must be the full 40-character lowercase analyzed SHA.'
     }
     if ([string]::IsNullOrEmpty($Directory) -or $Directory.StartsWith('-')) {
@@ -335,19 +349,27 @@ function Invoke-RepositoryCopy {
     if (-not $UploadOnly -and (Get-Item -LiteralPath $Directory -Force -ErrorAction SilentlyContinue)) {
         throw 'Local destination already exists; choose a new path.'
     }
-    $SarifItem = Get-Item -LiteralPath $SarifFile -Force -ErrorAction SilentlyContinue
-    if ($null -eq $SarifItem -or $SarifItem.PSIsContainer -or $SarifItem.Length -eq 0) {
-        throw "Local SARIF must be an existing readable, nonempty file: $SarifFile"
+    if ($FixedCommit -or $UploadOnly) {
+        $SarifItem = Get-Item -LiteralPath $SarifFile -Force -ErrorAction SilentlyContinue
+        if ($null -eq $SarifItem -or $SarifItem.PSIsContainer -or $SarifItem.Length -eq 0) {
+            throw "Local SARIF must be an existing readable, nonempty file: $SarifFile"
+        }
+        try {
+            $Readable = [System.IO.File]::OpenRead($SarifItem.FullName)
+            $Readable.Dispose()
+        }
+        catch { throw "Local SARIF must be an existing readable, nonempty file: $SarifFile" }
+        $SarifFile = $SarifItem.FullName
     }
-    try {
-        $Readable = [System.IO.File]::OpenRead($SarifItem.FullName)
-        $Readable.Dispose()
-    }
-    catch { throw "Local SARIF must be an existing readable, nonempty file: $SarifFile" }
-    $SarifFile = $SarifItem.FullName
     foreach ($Tool in @('git', 'gh')) {
         if (-not (Get-Command $Tool -CommandType Application -ErrorAction SilentlyContinue)) {
             throw "Install $Tool first."
+        }
+        if (-not $FixedCommit -and -not $UploadOnly) {
+            if ([string]::IsNullOrEmpty($Branch)) {
+                throw '--source-branch must be a valid branch name.'
+            }
+            $null = Invoke-SafeGit -ArgumentList @('check-ref-format', '--branch', $Branch)
         }
     }
     if ($ReviewBranch) {
@@ -358,7 +380,7 @@ function Invoke-RepositoryCopy {
     $AuthStatus = Invoke-Gh -ArgumentList @('auth', 'status', '--hostname', 'github.com')
     if ($AuthStatus) { Write-Host $AuthStatus }
     if ($UploadOnly) {
-        Send-Sarif -Target $Target -Commit $Commit -SarifFile $SarifFile
+        Send-Sarif -Target $Target -SarifFile $SarifFile
         return
     }
     $Visibility = Invoke-Gh -ArgumentList @('api', '--hostname', 'github.com', "repos/$Source", '--jq', '.visibility')
@@ -434,12 +456,20 @@ function Invoke-RepositoryCopy {
         )
     }
     if ($CodeqlState -cne 'not-configured') { throw 'Disable target CodeQL default setup before copying.' }
-    Write-Host "Source: $SourceUrl`nTarget: $TargetUrl`nAnalyzed SHA: $Commit`nLocal path: $Directory"
-    Write-Host "Using local SARIF: $SarifFile"
+    Write-Host "Source: $SourceUrl`nTarget: $TargetUrl`nLocal path: $Directory"
+    if ($FixedCommit) {
+        Write-Host "Analyzed SHA: $Commit`nUsing local SARIF: $SarifFile"
+    }
+    else { Write-Host "Source branch: $Branch" }
     $CloneOutput = Invoke-SafeGit -ArgumentList @('clone', '--no-checkout', '--no-tags', $SourceUrl, $Directory)
     if ($CloneOutput) { Write-Host $CloneOutput }
+    if (-not $FixedCommit) {
+        $Commit = Invoke-SafeGit -ArgumentList @(
+            '-C', $Directory, 'rev-parse', '--verify', "refs/remotes/origin/${Branch}^{commit}"
+        ) -FailureMessage "Source branch not found: $Branch. No code was pushed."
+    }
     $ActualCommit = Invoke-SafeGit -ArgumentList @('-C', $Directory, 'rev-parse', '--verify', "${Commit}^{commit}")
-    if ($ActualCommit -cne $Commit) { throw 'Analyzed commit did not resolve exactly.' }
+    if ($ActualCommit -cne $Commit) { throw 'Copy commit did not resolve exactly.' }
     $null = Invoke-SafeGit -ArgumentList @('-C', $Directory, 'checkout', '--detach', $Commit)
     $Refspecs = @('HEAD:refs/heads/main')
     if ($ReviewBranch) {
@@ -449,8 +479,8 @@ function Invoke-RepositoryCopy {
         try {
             $null = Invoke-SafeGit -ArgumentList @('-C', $Directory, 'merge-base', '--is-ancestor', $Commit, $ReviewCommit)
         }
-        catch { throw 'Review branch must descend from the analyzed commit.' }
-        if ($ReviewCommit -ceq $Commit) { throw 'Review branch has no commits beyond the analyzed commit.' }
+        catch { throw 'Review branch must descend from the copied commit.' }
+        if ($ReviewCommit -ceq $Commit) { throw 'Review branch has no commits beyond the copied commit.' }
         $Refspecs += "${ReviewCommit}:refs/heads/$ReviewBranch"
     }
     $null = Invoke-SafeGit -ArgumentList @('-C', $Directory, 'remote', 'set-url', 'origin', $TargetUrl)
@@ -468,12 +498,17 @@ function Invoke-RepositoryCopy {
     $PushOutput = Invoke-SafeGit -ArgumentList (@('-C', $Directory, 'push', '--atomic', 'origin') + $Refspecs)
     if ($PushOutput) { Write-Host $PushOutput }
     $RemoteSha = ((Invoke-SafeGit -ArgumentList @('ls-remote', $TargetUrl, 'refs/heads/main')) -split "`t")[0]
-    if ($RemoteSha -cne $Commit) { throw 'Remote main does not match the analyzed SHA; inspect the target.' }
+    if ($RemoteSha -cne $Commit) { throw 'Remote main does not match the copied SHA; inspect the target.' }
     $DefaultBranch = Invoke-Gh -ArgumentList @('api', '--hostname', 'github.com', "repos/$Target", '--jq', '.default_branch')
     if ($DefaultBranch -cne 'main') { throw 'Copy completed, but set the target default branch to main manually.' }
-    Send-Sarif -Target $Target -Commit $Commit -SarifFile $SarifFile
+    if ($FixedCommit) {
+        Send-Sarif -Target $Target -SarifFile $SarifFile
+    }
+    else {
+        Write-Host 'SARIF upload skipped: source branch copied; existing SARIF is historical analysis data.'
+    }
     Write-Host "`nCopy verified: https://github.com/$Target`nmain: $RemoteSha"
-    Write-Host "Local SARIF file (unchanged): $SarifFile"
+    if ($FixedCommit) { Write-Host "Local SARIF file (unchanged): $SarifFile" }
     if ($ReviewBranch) { Write-Host "Review branch: $ReviewBranch ($ReviewCommit)" }
     Write-Host 'Keep Actions disabled. Verify fork policies and distribute SARIF separately.'
 }
