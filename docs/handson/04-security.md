@@ -23,30 +23,70 @@ CodeQL이 분석을 수행하고, SARIF는 그 결과를 담으며, GitHub의 Co
 
 ## 웹에서 기존 경고 해석하기
 
-제공된 기준 저장소의 `Security and quality → Code scanning`에서 등록된 CodeQL 경고를 열거나,
-커밋된 [SARIF](../../code-scanning.sarif)를 GitHub 웹에서 엽니다.
-기준 저장소에는 준비 과정에서 기존 SARIF가 등록됩니다. 경고를 조회할 수 없으면 파일을 사용합니다.
-본인 포크에 이미 경고가 등록돼 있으면 그 결과를 사용해도 됩니다.
-GitHub 우측 상단의 Copilot 아이콘을 클릭한 뒤 [New Session](https://github.com/copilot) 메뉴를 클릭합니다.
-본인의 실습 저장소를 연결하고 경고 또는 SARIF 파일 링크를 붙여 자연어로 요청합니다.
-직접 조회 도구가 없으면 화면의 비민감 경고 설명을 제공합니다.
-자료의 출처가 기준 저장소인지 본인 포크인지, 파일 기반 해석인지 구분합니다.
-현재 결과는 과거 분석 SHA의 결과이며 새로 수행한 보안 검사가 아닙니다.
+`Security and quality → Code scanning`에서 경고를 보려면 해당 저장소에 SARIF 등 분석 결과가 등록돼 있어야 합니다.
 
-SARIF에는 다음 CodeQL 경고 두 건이 포함돼 있습니다.
+* 기준 저장소에는 준비 과정에서 SARIF가 등록됩니다. 경고 목록·상세 조회에는 기본 역할 기준 **Write(쓰기) 이상** 권한이 필요하며, 코드 Read(읽기) 권한만으로는 볼 수 없습니다.
+  기준 저장소에 해당 권한이 있으면 **기준 저장소의 `Security and quality → Code scanning` 메뉴**에서 등록된 결과를 직접 확인할 수 있습니다.
+* 포크에는 코드와 커밋된 SARIF 파일만 복사되고 **원본의 경고·상태는 복제되지 않습니다.** 본인 포크의 Code scanning에서 보려면 해당 포크에 별도로 SARIF를 등록하고 열람 권한을 갖춰야 합니다.
+* 경고 조회 권한이 없으면 커밋된 [SARIF 파일](../../code-scanning.sarif)을 GitHub 웹에서 열어 해석합니다.
 
-* `js/sql-injection`: Database query built from user-controlled sources
-* `js/missing-rate-limiting`: Missing rate limiting
+### 1. 업로드한 결과가 표시되는 메뉴 열기
 
-![기업 내부 기준 저장소에 기존 SARIF를 등록해 표시된 Code scanning 경고 두 건](images/04-code-scanning-list.png)
+SARIF 등록이 완료된 **대상 저장소**를 열고, 상단의 **Security and quality**를 클릭한 뒤
+왼쪽 **Code scanning**을 선택합니다. SARIF 파일의 Code 화면이나 Actions 실행 목록이 아니라 이 메뉴에서 경고를 확인합니다.
+이름이 `Security`로 표시되는 환경에서도 Code scanning 메뉴를 찾습니다.
 
-이 화면은 **기준 저장소**의 예시이지 실습자 포크의 결과가 아닙니다.
-화면 상단의 저장소 이름과 `Open` 필터를 확인하고 경고 제목을 엽니다.
+![SARIF 등록 후 상단 Security and quality, 왼쪽 Code scanning, 필터와 경고 제목을 확인하는 화면](images/04-sarif-upload-alerts.png)
 
-![SQL injection 경고 상세에서 규칙 ID와 코드 위치, Open 상태를 확인하는 화면](images/04-sql-alert-detail.png)
+이후 세 화면은 **기업 내부 기준 저장소에 기존 SARIF를 등록한 예시**이며 실습자 포크의 결과가 아닙니다.
+상단 메뉴와 왼쪽 탐색 영역을 남겨 위치를 표시했고, 빨간 테두리가 확인할 부분입니다.
+조직명·사용자 식별 정보는 가렸습니다. 본인 업로드를 확인할 때는 반드시 본인 대상 저장소에서 진행합니다.
 
-`Rule ID`, `src/inquiries/repository.ts:15`, 브랜치와 커밋 링크를 확인합니다.
-`Show paths`는 전달 경로를 읽는 기능입니다. `Generate fix`·`Dismiss alert`는 이 해석 단계에서 누르지 않습니다.
+검색창의 `is:open branch:main`은 **main 브랜치의 열린 경고만** 표시합니다.
+화면의 `2 Open`과 각 경고의 제목·`High`·파일·라인·브랜치를 확인합니다.
+SARIF에 포함된 경고와 이 화면의 대응 관계는 다음과 같습니다.
+
+| 목록의 경고 제목 | 상세 화면의 Rule ID | 등록된 위치 |
+|---|---|---|
+| Database query built from user-controlled sources | `js/sql-injection` | `src/inquiries/repository.ts:15` |
+| Missing rate limiting | `js/missing-rate-limiting` | `src/inquiries/repository.ts:8` |
+
+`2 Open`은 이 캡처 시점의 예시 값이며, 모든 저장소에서 두 건이 열린 상태로 보여야 한다는 뜻은 아닙니다.
+닫힌 경고는 `Closed`에서 확인하고, 대상 브랜치가 다르면 검색창의 `branch:main`을 해당 브랜치로 바꿉니다.
+필터 변경은 조회 조건만 바꾸며 경고를 종료하거나 새 분석을 실행하지 않습니다.
+
+### 2. SQL injection 경고 상세 확인
+
+목록의 **Database query built from user-controlled sources** 제목을 클릭합니다.
+
+![SQL injection 경고의 Open 상태, 파일과 라인, Show paths, Rule ID, 등록 대상 커밋을 강조한 화면](images/04-sarif-upload-sql-detail.png)
+
+상단의 `Open`·`On branch main`, 코드 위의 `src/inquiries/repository.ts:15`,
+코드 아래의 `Rule ID: js/sql-injection`을 확인합니다. 오른쪽에는 심각도 `High`가 표시됩니다.
+`Show paths`를 누르면 SARIF에 포함된 입력부터 문제 지점까지의 전달 경로를 읽을 수 있습니다.
+하단 `First detected in commit`의 커밋 링크(예시: `b341056`)는 **GitHub에 결과를 등록한 대상 커밋**이며,
+SARIF 파일에 기록된 원본 분석 SHA와 같다고 가정하지 않습니다.
+
+이 경고는 사용자 입력으로 구성된 데이터베이스 쿼리의 위험을 설명합니다.
+다만 캡처의 코드는 `pool.query(query, [keyword])` 형태이므로,
+화면에 경고가 있다는 이유만으로 현재 코드의 SQL injection 취약성이 확정됐다고 판단하지 않습니다.
+아래 원본 분석·등록 대상·현재 코드 구분 절차를 함께 따릅니다.
+
+### 3. Rate limiting 경고 상세 확인
+
+상세 화면 왼쪽 위의 **← Code scanning alerts**로 돌아가 **Missing rate limiting** 제목을 클릭합니다.
+
+![Rate limiting 경고의 Open 상태, 파일과 라인, High 심각도와 Rule ID를 강조한 화면](images/04-sarif-upload-rate-limit-detail.png)
+
+`src/inquiries/repository.ts:8`과 `Rule ID: js/missing-rate-limiting`을 확인합니다.
+이 경고는 데이터베이스 접근 같은 비용이 큰 작업을 수행하는 HTTP 처리기에 요청 빈도 제한이 없으면
+대량 요청으로 서비스가 느려지거나 응답하지 않을 수 있다는 의미입니다.
+실제 영향은 해당 경로의 노출 여부와 프록시·게이트웨이 등 다른 계층의 제한도 조사한 뒤 판단합니다.
+
+두 상세 화면의 `Generate fix`·`Dismiss alert`는 이 해석 단계에서 누르지 않습니다.
+경고 조회와 보안 수정 요청·경고 종료는 서로 다른 작업입니다.
+
+### 4. 과거 분석 결과와 현재 코드를 구분해 해석
 
 > [!IMPORTANT]
 > 커밋된 SARIF의 `versionControlProvenance`에는 공개 원본의 분석 SHA
@@ -60,8 +100,16 @@ SARIF에는 다음 CodeQL 경고 두 건이 포함돼 있습니다.
 ![Copilot이 SARIF 원본 분석 SHA와 현재 코드 및 재등록 경고의 상태를 구분한 설명](images/04-sarif-provenance-answer.png)
 
 원본의 경고 번호·Fixed·Dismissed 상태·종료 사유는 포크에 복제되지 않습니다.
-경고가 보이지 않으면 분석 등록 내역·처리 상태·필터·권한을 확인합니다.
+경고가 보이지 않으면 대상 저장소·브랜치·`Open`/`Closed` 필터, 분석 등록 내역·처리 상태·권한을 확인합니다.
+메뉴가 없거나 404가 표시되면 대상 조직에 접근 가능한 계정·조직 SSO와 Code scanning 열람 권한을 확인합니다.
+이유를 확인할 수 없으면 설정을 임의 변경하거나 재업로드하지 말고 커밋된 [SARIF](../../code-scanning.sarif)를 사용합니다.
 빈 목록만 보고 업로드 성공이나 전체 안전을 단정하지 않습니다.
+
+GitHub 우측 상단의 Copilot 아이콘을 클릭한 뒤 [New Session](https://github.com/copilot) 메뉴를 클릭합니다.
+본인의 실습 저장소를 연결하고 경고 또는 SARIF 파일 링크를 붙여 자연어로 요청합니다.
+직접 조회 도구가 없으면 화면의 비민감 경고 설명을 제공합니다.
+자료의 출처가 기준 저장소인지 본인 포크인지, 파일 기반 해석인지 구분합니다.
+현재 결과는 과거 분석 SHA의 결과이며 새로 수행한 보안 검사가 아닙니다.
 
 ```text
 현재 연결된 실습 저장소의 code-scanning.sarif를 읽고, 경고 내용을 업무 담당자가 이해할 수 있게 설명해줘.
@@ -179,7 +227,9 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 
 업로드 전용 모드는 저장소 생성·설정 변경·Git push를 하지 않으며 로컬 대상 디렉터리 지정도 필요하지 않습니다.
 실행 출력의 `SARIF processing complete:`를 확인한 뒤,
-본인 포크의 `Security and quality → Code scanning`에서 규칙·파일·라인·등록 대상 커밋을 확인합니다.
+본인 포크의 `Security and quality → Code scanning`을 엽니다.
+[업로드한 결과가 표시되는 메뉴 열기](#1-업로드한-결과가-표시되는-메뉴-열기)의 캡처 순서대로
+대상 저장소·브랜치·필터를 확인하고, 경고 제목을 눌러 규칙·파일·라인·등록 대상 커밋을 대조합니다.
 API 접수만으로 등록 완료를 판단하지 않습니다.
 
 실패하면 출력된 오류와 업로드 ID의 처리 상태를 확인하고, 확인 없이 중복 제출하지 않습니다.
