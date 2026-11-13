@@ -11,11 +11,11 @@ export PAGER=cat
 
 # Edit these values before running from the repository root.
 SOURCE_REPO='hijigoo/github-workflow-sample'
-TARGET_REPO='haewons-emu-org/inquiry-training-base'
+TARGET_REPO='haewons-emu-org/github-workflow-sample'
 # Keep this SHA paired with the local SARIF's analyzed commit.
 ANALYZED_SHA='7e374656389ab24b71af8e409dbd434346278ace'
 SARIF_FILE='./code-scanning.sarif'
-LOCAL_DIRECTORY='./inquiry-training-base'
+LOCAL_DIRECTORY='./github-workflow-sample'
 REVIEW_BRANCH=''
 # Confirm safety settings and Code Security licensing/costs before setting true.
 SETTINGS_CONFIRMED=true
