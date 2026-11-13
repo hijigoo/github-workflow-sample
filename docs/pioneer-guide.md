@@ -1,4 +1,9 @@
-# 실습 기준 저장소 사전 준비 가이드
+---
+title: 실습 기준 저장소 사전 준비 가이드
+description: Pioneer가 기업 내부 실습 조직과 기준 저장소 및 실습자 포크를 준비하는 절차
+---
+
+## 실습 기준 저장소 사전 준비 가이드
 
 GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장소를 직접 포크할 수 없습니다.
 조직 오너가 Pioneer 역할로 실습 정책·권한을 설정하고, 공개 원본의 `handson` 브랜치를 기업 내부 조직의 독립 기준 저장소로 복사합니다.
@@ -18,6 +23,7 @@ GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장�
 1. Pioneer가 조직 설정·권한과 도구를 확인합니다.
 2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 원본 `handson`을 기준 저장소의 `main`으로 복사합니다.
 3. 복사된 커밋·SARIF 등록 결과·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
+4. 실습자 포크 생성 전에 조직의 자동 실행 차단 정책을 적용하고, 생성 직후 Pioneer 또는 위임받은 준비 담당자가 각 포크의 Issues·보안 구성·권한을 확인한 뒤 실습 시작을 안내합니다.
 
 > [!IMPORTANT]
 > 준비 스크립트와 SARIF 등록에는 Actions runner를 사용하지 않습니다.
@@ -64,11 +70,6 @@ Enterprise 정책으로 잠긴 항목은 기업 관리자에게 요청하며, �
 기준 저장소에서는 준비 스크립트가 등록한 경고를 확인합니다. 실습자 포크에 경고가 없으면 기준 저장소의 결과 또는 복사된 SARIF 파일을 사용합니다.
 경고 목록 열람에는 저장소 쓰기 권한 등 해당 보안 기능 접근 권한이 필요하며, 코드 읽기만으로 충분하다고 가정하지 않습니다.
 
-설정 근거: [Copilot Seat 부여](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-access/grant-access),
-[Cloud 정책·저장소 접근](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-copilot-in-the-cloud),
-[조직 포크 정책](https://docs.github.com/en/organizations/managing-organization-settings/managing-the-forking-policy-for-your-organization),
-[보안 구성 적용](https://docs.github.com/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/apply-custom-configuration)
-
 </details>
 
 <details>
@@ -86,11 +87,6 @@ Enterprise 정책으로 잠긴 항목은 기업 관리자에게 요청하며, �
 | [ ] | 자동 병합·배포 | 저장소 `Settings → General → Pull Requests → Allow auto-merge`; `Settings → Actions → General`; `Settings → Environments` | 자동 병합을 비활성화하고 Actions 배포를 실행하지 않습니다. 외부 배포 연동이 있다면 담당자와 자동 트리거를 확인합니다. 수동 병합·배포도 실습에서는 요청하지 않습니다. |
 | [ ] | 경고 상태 변경 | 저장소 `Settings → Collaborators and teams`; `Security and quality → Code scanning → 경고 상세` | 실습자와 담당자의 역할을 확인하고 경고의 Dismiss 조작을 실습에서 사용하지 않도록 안내합니다. `Write` 권한으로 가능한 조작을 모두 별도 차단할 수 있다고 가정하지 않습니다. Fixed 확인은 승인된 후속 재분석 담당자에게 남깁니다. |
 
-설정 근거: [자동 PR 리뷰 구성](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review),
-[자동화 허용 정책](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-copilot-in-the-cloud#controlling-automations-in-your-repositories),
-[CodeQL default setup 비활성화](https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/troubleshoot-sarif-uploads/default-setup-enabled),
-[Agent Merge 실행 환경·중지](https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/watch-and-fix-pull-requests)
-
 </details>
 
 <br/>
@@ -102,6 +98,54 @@ Actions 비활성화만으로 모든 진입점의 실행 환경이 확인되는 
 설정으로 차단하는 기능과 권한은 있지만 실습에서 사용하지 않는 기능을 구분해 안내합니다.
 위 표는 설정 확인 목록이며, 실습자의 실제 포크 준비는 [00번 가이드](handson/00-preparation.md)에서 진행합니다.
 포크에 기준 저장소의 권한·자동 실행 설정·보안 결과가 모두 상속된다고 가정하지 않습니다.
+
+### 포크 생성 전 조직 정책과 생성 후 설정
+
+Actions 차단·Issues 활성화·Code Security 적용은 실습자가 오류를 발견한 뒤 해결할 항목이 아니라
+Pioneer가 조직 준비 단계에서 적용 범위·담당자·완료 기준을 정해야 하는 항목입니다.
+조직 정책으로 미리 적용할 설정과 포크 생성 후 저장소별로 적용할 설정을 구분합니다.
+기준 저장소만 설정하거나 준비 스크립트를 한 번 실행해도 이후 생성되는 포크까지 준비되는 것은 아닙니다.
+
+1. 포크 생성 전에 조직 `Settings → Actions → General`에서 실행 차단 정책을 구성합니다.
+   실습 전용 조직이면 승인 후 조직 전체의 Actions를 비활성화합니다.
+   업무 저장소와 공유하는 조직이면 Actions를 사용할 저장소만 허용하는 정책으로 실습 대상 기준 저장소와 새 포크를 허용 목록에서 제외합니다.
+   허용할 actions·재사용 workflow의 종류를 제한하는 설정만으로는 실행 차단이 되지 않습니다.
+   조직 정책 변경은 다른 업무 저장소에 미치는 영향을 검토하고 승인받습니다.
+   조직 정책으로 사전 차단할 수 없으면 각 포크 생성 직후 준비 담당자가 저장소의 `Disable actions`를 적용하고 확인할 때까지 후속 작업을 중단합니다.
+2. Issues는 각 포크가 생성된 뒤 준비 담당자가 해당 저장소의 `Settings → General → Features`에서 `Issues` 체크박스를 선택해 활성화합니다.
+   이 기능은 02번의 기능 요청 Issue와 04번의 조사·조치 Issue를 만드는 데 필요합니다.
+   기준 저장소에서 Issues를 켰다는 사실을 새 포크의 활성화 근거로 사용하지 않습니다.
+   일반 실습자에게 관리자 권한을 부여하는 대신 준비 담당자가 설정하고, 실습 계정으로 `Issues → New issue` 접근과 작성 권한을 확인합니다.
+3. 포크에서도 Code scanning을 사용할 계획이면 먼저 Code Security 또는 기존 GHAS의 이용 권한·비용을 승인받습니다.
+   승인받았다면 조직 `Settings → Advanced Security → Configurations → New configuration → Custom configuration`에서 다음과 같이 설정합니다.
+
+   * 구성을 식별할 이름으로 `copilot-handson-sarif`를 입력합니다.
+   * `Code Security`를 활성화합니다. 기존 SARIF를 등록하고 Code scanning 화면에서 읽기 위해 필요한 제품 기능입니다.
+     기존 GHAS 계약 화면에서는 이를 포함하는 `GitHub Advanced Security` 활성화 항목을 확인합니다.
+   * Code scanning의 `Default setup`은 `Disabled`로 지정합니다.
+     `Enabled`나 `Enabled with advanced setup allowed`를 선택하지 않습니다.
+     Code Security 제품을 켜는 것과 CodeQL 분석을 자동 실행하는 것은 별개이며, 이번 실습은 제품만 사용하고 새 분석은 하지 않습니다.
+   * `Secret Protection`·Secret scanning·Dependabot는 이번 SARIF 조회를 위해 추가 활성화할 필요가 없습니다.
+     관련 없는 기능을 일괄 활성화하거나 조직의 기존 보안 정책을 임의로 해제하지 않습니다.
+   * `Use as default for newly created repositories`는 공유 조직이면 `None`으로 유지합니다.
+     실습 전용 조직이고 해당 신규 저장소의 비용까지 승인받았다면 `Private and internal`을 선택합니다.
+   * 구성을 저장한 뒤 `Configurations → Repositories`에서 기준 저장소와 생성된 실습자 포크를 선택하고
+     `Apply configuration → copilot-handson-sarif`를 선택합니다. 라이선스 사용량 안내를 검토하고 `Apply`를 누릅니다.
+     공유 조직의 다른 업무 저장소는 선택하지 않습니다.
+   * 적용 상태가 `attached`인지 확인합니다. `attaching`은 대기 상태이고 `failed`는 실패이므로 완료 처리하지 않습니다.
+     각 포크의 `Settings → Advanced Security → Code Security`에서도 제품 활성화와 CodeQL default setup 비활성화를 확인합니다.
+     실습 계정으로 해당 포크의 `Security and quality → Code scanning`을 열어 접근을 확인합니다.
+
+   새 포크에도 이 적용 확인을 반복하며, 신규 저장소 기본값 지정만으로 완료 처리하지 않습니다.
+   포크의 유료 기능 사용을 승인받지 않았다면 활성화하지 않고, 04번은 접근 가능한 기준 저장소 경고 또는 SARIF 파일로 진행한다고 미리 안내합니다.
+4. 점검용 포크에서 위 절차를 먼저 검증하고, 실제 실습자 포크가 생성될 때도 같은 확인을 반복합니다.
+   담당자는 포크 주소·확인 시점·Actions 차단·Issues 활성화·Cloud 접근 허용·Code scanning 사용 가능 여부 또는 대체 자료를 기록해 실습자에게 전달합니다.
+   CodeQL default setup·자동 분석·자동 리뷰·자동 에이전트 호출도 비활성화 상태인지 확인합니다.
+   준비 완료 전에는 Issue 할당·Cloud 구현·push·PR 생성을 진행하지 않습니다.
+
+Code Security 기능을 적용하는 것과 기존 경고를 등록하는 것은 별도입니다.
+보안 구성이 적용돼도 기준 저장소의 경고가 포크에 복제되지는 않으며,
+포크의 SARIF 등록은 승인된 [04번 선택 실습](handson/04-security.md#선택-실습-기존-sarif-등록)에서만 진행합니다.
 
 ### 준비 담당자 도구
 
@@ -236,6 +280,7 @@ gh api --hostname github.com repos/ORG/github-workflow-sample/code-scanning/sari
 * [기업 내부 포크 정책](https://docs.github.com/en/enterprise-cloud@latest/pull-requests/reference/forks)
 * [조직의 private 저장소 포크 허용 설정](https://docs.github.com/en/organizations/managing-organization-settings/managing-the-forking-policy-for-your-organization)
 * [조직 저장소의 역할별 권한](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization)
+* [저장소 Issues 활성화·비활성화](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/disabling-issues)
 * [실습 대상 사용자·팀의 Copilot Seat 부여](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-access/grant-access)
 * [조직의 Cloud 사용·저장소 접근·자동화 허용 정책](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-copilot-in-the-cloud)
 * [Cloud 샌드박스와 Actions 실행 환경 구분](https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/about-cloud-sandboxes)
@@ -244,12 +289,15 @@ gh api --hostname github.com repos/ORG/github-workflow-sample/code-scanning/sari
 
 ### 자동 실행 차단
 
+* [조직 Actions 비활성화와 저장소별 허용](https://docs.github.com/en/organizations/managing-organization-settings/disabling-or-limiting-github-actions-for-your-organization)
 * [저장소 Actions 비활성화](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository)
 * [Copilot 자동 PR 리뷰 설정과 ruleset](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review)
+* [Copilot 자동화 허용 정책](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-copilot-in-the-cloud#controlling-automations-in-your-repositories)
 * [Agent Merge 실행 환경과 비활성화](https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/watch-and-fix-pull-requests)
 
 ### Code Security와 SARIF
 
+* [사용자 지정 보안 구성과 신규 저장소 기본값](https://docs.github.com/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/create-custom-configuration)
 * [조직 보안 구성 적용과 라이선스 영향 확인](https://docs.github.com/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/apply-custom-configuration)
 * [SARIF 업로드 요구사항](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/upload-sarif-file)
 * [SARIF 등록을 위한 CodeQL default setup 비활성화](https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/troubleshoot-sarif-uploads/default-setup-enabled)

@@ -1,4 +1,9 @@
-# 00. 실습을 위한 저장소 사전 준비
+---
+title: 00. 실습을 위한 저장소 사전 준비
+description: 기업 내부 기준 저장소를 포크하고 준비 담당자의 설정 완료와 실습 권한을 확인하는 절차
+---
+
+## 00. 실습을 위한 저장소 사전 준비
 
 [전체 목차와 공통 안내](README.md)의 웹 기반·Actions runner 미사용 범위를 따릅니다.
 Pioneer가 준비한 기업 내부 기준 저장소를 본인 조직의 실습 저장소로 포크하고 준비 결과를 확인합니다.
@@ -40,7 +45,14 @@ GHEC EMU에서는 기업 외부 공개 저장소를 직접 포크할 수 없습�
 
 ## 3. 실습 저장소 설정 확인
 
-Pioneer가 사전 설정한 기준을 바탕으로 본인 포크의 상태만 확인합니다.
+사전 설정된 기준을 바탕으로 본인 포크의 상태만 확인합니다.
+Pioneer 또는 위임받은 준비 담당자는
+[포크 생성 전 조직 정책과 생성 후 설정](../pioneer-guide.md#포크-생성-전-조직-정책과-생성-후-설정)에 따라
+Actions 차단 정책을 사전에 구성하고, 포크 생성 직후 Issues 활성화와 승인된 보안 구성 적용을 담당합니다.
+여기서 준비할 상태는 **Issues 켜기, 승인된 Cloud 사용 허용, Actions 끄기**입니다.
+본인 포크에서 Code scanning 조회·SARIF 등록까지 진행하려면 비용 승인 후 **Code Security는 켜고 CodeQL default setup은 꺼야** 합니다.
+Secret scanning이나 Dependabot를 켜라는 의미가 아닙니다.
+실습자는 포크 주소를 준비 담당자에게 전달하고 설정 완료 안내를 받은 뒤 아래 항목을 확인합니다.
 기준 저장소의 설정이 포크에 그대로 적용됐다고 가정하지 않으며,
 설정이 다르거나 확인할 수 없으면 직접 변경하지 말고 준비 담당자에게 확인을 요청합니다.
 
@@ -52,11 +64,18 @@ Pioneer가 사전 설정한 기준을 바탕으로 본인 포크의 상태만 �
 ### GitHub 웹에서 준비 결과 확인
 
 * 본인 조직의 실습 저장소 주소를 확인합니다.
-* `Settings → Actions → General`에서 Actions 비활성화를 확인합니다.
+* `Settings → General → Features`에서 `Issues` 체크박스가 선택돼 있는지 확인합니다.
+  포크의 `Issues → New issue`를 열 수 있어야 합니다.
+* `Settings → Actions → General → Actions permissions`에서 `Disable actions`가 적용돼 있는지 확인합니다.
+  조직 정책으로 차단한 경우에는 준비 담당자에게 해당 포크가 차단 대상인지 확인받습니다.
   설정을 볼 수 없으면 관리자에게 확인받습니다.
+* 조직의 `Copilot in the cloud`가 `Enabled`이고 `Cloud → Repository access`에 본인 포크가 허용돼 있는지 담당자에게 확인받습니다.
+  실습 계정의 Copilot Seat와 비용 승인도 필요하며, 실제 세션에서 본인 포크 연결·`Environment → Cloud` 선택이 가능해야 합니다.
 * CodeQL default setup·자동 분석·자동 PR 리뷰·에이전트 자동 호출이 꺼져 있는지 확인합니다.
-* Issues가 활성화돼 있는지 확인합니다.
-* 본인 실습 저장소에서 `Security and quality → Code scanning` 메뉴가 보이고 열리는지 확인합니다.
+* 포크의 Code scanning 사용이 승인된 경우, 담당자가 `Settings → Advanced Security → Code Security`에서
+  `Code Security`(기존 계약은 이를 포함하는 `GitHub Advanced Security`)를 활성화했는지 확인받습니다.
+  `CodeQL analysis`의 default setup은 비활성화 상태로 유지합니다. 분석을 시작하는 `Set up`은 누르지 않습니다.
+  본인 실습 계정으로 `Security and quality → Code scanning` 메뉴가 열리는지 확인합니다.
   메뉴가 보이지 않거나 404이면 준비 담당자에게 권한과 해당 포크의 Code Security 적용 여부를 확인받습니다.
   경고가 없어도 괜찮습니다. 본인 포크에서 열 수 없으면 04번 기본 실습은 접근 가능한 기준 저장소 경고 또는 SARIF 파일로 진행할 수 있지만,
   본인 포크의 경고 조회·선택 업로드 준비가 완료된 것은 아닙니다. 유료 보안 기능을 임의로 활성화하지 않습니다.

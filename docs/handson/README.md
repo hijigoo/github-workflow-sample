@@ -1,4 +1,9 @@
-# 웹 기반 GHEC Copilot 핸즈온
+---
+title: 웹 기반 GHEC Copilot 핸즈온
+description: 기업 내부 조직 저장소에서 웹 기반 Copilot 실습을 진행하는 순서와 환경 및 검증 범위
+---
+
+## 웹 기반 GHEC Copilot 핸즈온
 
 ## 실습 목표와 범위
 
@@ -63,36 +68,6 @@ Copilot 아이콘 옆 화살표에서 `New session`을 엽니다. 저장소가 �
 | [03. PR 검수와 보완 (세션 C)](03-pr-review.md) | PR 질문·댓글 게시·같은 PR 보완 요청 | 10분 |
 | [04. 보안 경고 해석과 조치 (세션 D)](04-security.md) | 보안 경고 해석 및 조사 Issue 등 조건부 수정 요청 | 15분 |
 
-표의 시간은 입력·검토 기준입니다. Cloud 대기, 의존성 설치와 준비 담당자의 권한 확인 시간은 별도로 확보합니다.
-
-<details>
-<summary>2026-11-13 실제 테스트 범위와 남은 확인</summary>
-
-기업 내부 기준 저장소 `haewons-emu-org/github-workflow-sample`에서
-`haewons-emu-org/github-workflow-haewonshin_azkr`를 포크해 테스트했습니다.
-테스트 계정은 포크 관리자 권한이 있으므로, 일반 실습자의 계정·권한으로도 사전 점검이 필요합니다.
-로컬 문서·이미지 변경은 원격 저장소에 게시하지 않았습니다.
-
-| 단계 | 직접 확인한 결과 |
-|---|---|
-| 00 | 기업 내부 포크 생성. 새 포크의 Actions 활성화·Issues 비활성화·Code Security 미적용을 발견했고 준비 담당자 역할로 해당 포크의 Actions 차단·Issues 활성화만 적용했습니다. 보안 기능은 켜지 않았습니다. |
-| 01 | 본인 포크를 연결한 Cloud 세션에서 프로젝트 설명·추가 질문과 코드 근거를 확인했습니다. Personal 범위에서 검색되지 않던 저장소는 조직 범위 선택 후 표시됐습니다. |
-| 02 | [기능 Issue #1](https://github.com/haewons-emu-org/github-workflow-haewonshin_azkr/issues/1)과 [Draft PR #3](https://github.com/haewons-emu-org/github-workflow-haewonshin_azkr/pull/3)을 생성했습니다. Cloud의 설정 API 403은 관리자 수동 확인 증빙을 전달해 처리했으며 App 권한은 확대하지 않았습니다. |
-| 03 | 같은 PR의 여섯 완료 조건·diff·커밋·Checks 0건을 대조했습니다. 기능·테스트 누락이 없어 보완 댓글 게시와 추가 수정·push는 하지 않았습니다. 댓글 입력 위치만 확인했습니다. |
-| 04 | 기준 저장소의 기존 경고 두 건과 SARIF·현재 코드의 차이를 확인하고 [조사 Issue #2](https://github.com/haewons-emu-org/github-workflow-haewonshin_azkr/issues/2)에 근거·담당자·검증 대기를 남겼습니다. |
-
-기능 PR의 검증 대상 커밋은 `44c051fc1a483454ef9fb9148286d2599cf69789`입니다.
-구현 Cloud 세션의 실제 도구 출력에서 `npm run test:ui` **8개 통과**,
-`npm run test:unit` **45개 통과·14개 미실행**을 확인했습니다.
-14개는 PowerShell 7.4+ 미설치로 건너뛴 준비 스크립트 검사이며, Windows 검증 완료로 해석하지 않습니다.
-의존성 누락으로 UI 검사가 처음 실패한 뒤 잠금 파일 기준 설치·재실행을 거쳤습니다.
-
-기준 저장소와 포크의 `main`은 유지했고, 포크의 Actions 실행은 0건입니다.
-플랫폼이 PR 생성 시 자동 표시한 Copilot 담당자는 해제했으며 자동 리뷰·Agent Merge·병합·배포를 실행하지 않았습니다.
-본인 포크의 Code scanning 조회·선택 SARIF 업로드, 새 CodeQL 분석, Runner 할당형 선택 실습과
-누락이 있을 때의 댓글 게시·동일 PR 보완은 이번 테스트에서 실행하지 않았습니다.
-
-</details>
 
 ## 참고
 
