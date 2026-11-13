@@ -127,7 +127,7 @@ CodeQL 재분석 등 아직 확인하지 못한 사항을 알려줘.
 ```
 
 수정 결과를 PR로 남기려면
-[02. 새 요구사항 요청 (세션 B)](02-feature-request.md)의 Actions 차단 확인·PR 생성 절차를 따릅니다.
+[02. 새 요구사항 요청 (세션 B)](02-feature-request.md)의 PR 생성 절차를 따릅니다.
 코드 수정이나 Cloud 회귀 테스트, 기존 SARIF 재등록만으로 경고 해소를 선언하지 않습니다.
 CodeQL 재분석과 Fixed 전환 확인은 승인된 후속 환경의 담당자에게 남깁니다.
 Dependabot·Secret scanning은 이번 CodeQL SARIF의 대상이 아닙니다.
@@ -145,7 +145,7 @@ Dependabot·Secret scanning은 이번 CodeQL SARIF의 대상이 아닙니다.
 
 ### 실행 전 확인
 
-* [Pioneer 가이드의 준비 도구와 CLI 인증](../pioneer-guide.md)을 참고해 Git·GitHub CLI와 OS별 도구를 준비합니다.
+* [실습 준비 담당자 가이드의 준비 도구와 CLI 인증](../pioneer-guide.md)을 참고해 Git·GitHub CLI와 OS별 도구를 준비합니다.
 * EMU 계정으로 GitHub CLI에 로그인하고 본인 포크에 SARIF를 등록할 권한을 확인합니다.
 * 관리자에게 포크의 Code Security 이용 권한·비용 승인을 확인받습니다. 이 명령은 Code Security를 활성화하지 않습니다.
 * 포크의 Actions·CodeQL default setup이 비활성화돼 있고 자동 실행이 차단돼 있는지 확인합니다.
