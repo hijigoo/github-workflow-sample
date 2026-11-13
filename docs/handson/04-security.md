@@ -38,6 +38,27 @@ SARIF에는 다음 CodeQL 경고 두 건이 포함돼 있습니다.
 * `js/sql-injection`: Database query built from user-controlled sources
 * `js/missing-rate-limiting`: Missing rate limiting
 
+![기업 내부 기준 저장소에 기존 SARIF를 등록해 표시된 Code scanning 경고 두 건](images/04-code-scanning-list.png)
+
+이 화면은 **기준 저장소**의 예시이지 실습자 포크의 결과가 아닙니다.
+화면 상단의 저장소 이름과 `Open` 필터를 확인하고 경고 제목을 엽니다.
+
+![SQL injection 경고 상세에서 규칙 ID와 코드 위치, Open 상태를 확인하는 화면](images/04-sql-alert-detail.png)
+
+`Rule ID`, `src/inquiries/repository.ts:15`, 브랜치와 커밋 링크를 확인합니다.
+`Show paths`는 전달 경로를 읽는 기능입니다. `Generate fix`·`Dismiss alert`는 이 해석 단계에서 누르지 않습니다.
+
+> [!IMPORTANT]
+> 커밋된 SARIF의 `versionControlProvenance`에는 공개 원본의 분석 SHA
+> `7e374656389ab24b71af8e409dbd434346278ace`가 들어 있습니다.
+> 이 파일에는 분석 실행 시각(`invocations`의 시작·종료 시각)이 없어 파일만으로는 분석 시각을 확인할 수 없습니다.
+> GitHub에 재등록한 대상 SHA와 등록 시각, 현재 코드의 SHA는 원본 분석 SHA·시각과 구분합니다.
+> 실제 테스트에서도 SQL 경고는 Open이지만 연결된 현재 코드에는 매개변수화 쿼리가 보였습니다.
+> 과거 SARIF를 다른 커밋에 등록하면 이런 차이가 생길 수 있으며, 새 탐지나 수정 실패의 증거로 단정하지 않습니다.
+> 원본 분석 코드와 현재 코드를 비교하고 재분석 전까지 해소 여부는 미확인으로 남깁니다.
+
+![Copilot이 SARIF 원본 분석 SHA와 현재 코드 및 재등록 경고의 상태를 구분한 설명](images/04-sarif-provenance-answer.png)
+
 원본의 경고 번호·Fixed·Dismissed 상태·종료 사유는 포크에 복제되지 않습니다.
 경고가 보이지 않으면 분석 등록 내역·처리 상태·필터·권한을 확인합니다.
 빈 목록만 보고 업로드 성공이나 전체 안전을 단정하지 않습니다.
@@ -49,6 +70,8 @@ js/sql-injection 또는 js/missing-rate-limiting 중 실제 경고 한 건을 �
 어떤 입력이 어떤 코드로 전달돼 문제가 될 수 있는지 근거 링크와 함께 알려줘.
 탐지 사실, 실제 서비스 영향, 확인하지 못한 사항과 권장 조치를 구분해줘.
 규칙·파일·라인·상태·분석 커밋과 시각도 확인해줘.
+SARIF 원본 분석 SHA·시각과 GitHub 재등록 대상 SHA·등록 시각, 현재 코드 SHA를 구분해줘.
+파일에 없는 상태나 시각은 확인 불가라고 하고, 현재 코드와 과거 결과가 다르면 설명해줘.
 직접 조회하지 못하면 그 사실을 알려주고 제공된 경고 내용이나 code-scanning.sarif에만 근거해줘.
 새 분석·코드 수정·경고 종료는 하지 마.
 ```
@@ -66,6 +89,7 @@ Open은 악용 가능성 확정이 아니며, Fixed와 Dismissed도 같은 의�
 탐지된 사실, 영향 판단, 확인하지 못한 사항과 근거가 되는 경고 또는 파일 링크를 구분해줘.
 수정 필요성을 판단할 조사 항목과, 수정한다면 필요한 변경·테스트 범위를 적어줘.
 code-scanning.sarif에서 확인되는 분석 SHA와 시각을 기록하고, SARIF 업로드는 새 검사가 아님을 명시해줘.
+원본 분석 SHA와 재등록 대상 SHA를 구분하고 파일에 없는 분석 시각·현재 경고 상태는 확인 불가로 남겨줘.
 CodeQL 재분석은 이번 실습에서 실행하지 않으므로 후속 확인 항목으로 남겨줘.
 기존 Issue·PR과 중복되지 않게 하고 아직 등록하거나 구현하지 마.
 ```
@@ -80,6 +104,11 @@ Copilot 담당자 할당이나 경고 상태 변경, 수정 작업은 시작하�
 
 도구가 없으면 GitHub 웹에서 직접 등록합니다.
 조사만 필요한 상황에서 구현이나 PR 생성을 억지로 요청하지 않습니다.
+
+![원본 분석과 현재 코드의 차이, 근거 링크, 후속 담당자를 남긴 조사 Issue](images/04-investigation-issue.png)
+
+등록된 본문에 실제 근거 링크와 후속 담당자, `검증 대기`가 남았는지 확인합니다.
+이 예시는 조사 Issue이며 보안 수정 PR이나 경고 해소 결과가 아닙니다.
 
 ## 수정이 필요한 경우의 후속 요청
 
