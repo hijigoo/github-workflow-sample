@@ -1,9 +1,4 @@
----
-title: 웹 기반 GHEC Copilot 핸즈온
-description: 기업 내부 조직 저장소에서 웹 기반 Copilot 실습을 진행하는 순서와 환경 및 검증 범위
----
-
-## 웹 기반 GHEC Copilot 핸즈온
+# 웹 기반 GHEC Copilot 핸즈온
 
 ## 실습 목표와 범위
 
