@@ -14,7 +14,7 @@
 .PARAMETER SourceRepo
     Public source repository in OWNER/REPO form.
 .PARAMETER SourceBranch
-    Source branch copied to target main before SARIF upload; defaults to handson.
+    Source branch copied to target main before SARIF upload; defaults to main.
 .PARAMETER TargetRepo
     Private or internal target repository in ORG/REPO form.
 .PARAMETER AnalyzedSha
@@ -52,7 +52,7 @@ param(
     [string]$SourceRepo = 'hijigoo/github-workflow-sample',
     [Parameter(Mandatory = $false)]
     [Alias('source-branch')]
-    [string]$SourceBranch = 'handson',
+    [string]$SourceBranch = 'main',
     [Parameter(Mandatory = $false)]
     [string]$TargetRepo = 'haewons-emu-org/inquiry-training-base',
     # Keep this SHA paired with the local SARIF's analyzed commit.
@@ -109,7 +109,7 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-By default, copy the tip of SourceBranch (handson) to target main and
+By default, copy the tip of SourceBranch (main) to target main and
 upload the existing local SARIF.
 -AnalyzedSha / --commit overrides branch selection: copy that analyzed SHA
 to target main and upload the existing local SARIF. It must match that SARIF.

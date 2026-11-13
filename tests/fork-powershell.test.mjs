@@ -207,19 +207,18 @@ runtimeTest('PowerShell uploads SARIF onto current main without analyzed commit 
   }
 });
 
-runtimeTest('PowerShell copies handson to main and uploads unchanged SARIF by default', t => {
+runtimeTest('PowerShell copies main to main and uploads unchanged SARIF by default', t => {
   for (const native of [false, true]) {
     const f = fixture(t);
     const original = readFileSync(f.sarifFile);
     const result = f.run([], {}, { native, branchCopy: true });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
-    assert.equal(f.git(['--git-dir', f.target, 'show', 'main:handson-only.txt']), 'Hands-on branch content');
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha);
     assert.equal(f.git(['--git-dir', f.target, 'for-each-ref', '--format=%(refname)']), 'refs/heads/main');
-    assert.match(result.stdout, /Source branch: handson/);
+    assert.match(result.stdout, /Source branch: main/);
     assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
     const payload = JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8'));
-    assert.equal(payload.commit_sha, f.handsonSha);
+    assert.equal(payload.commit_sha, f.sha);
     assert.equal(payload.ref, 'refs/heads/main');
     assert.deepEqual(gunzipSync(Buffer.from(payload.sarif, 'base64')), original);
     assert.deepEqual(readFileSync(f.sarifFile), original);
@@ -229,15 +228,18 @@ runtimeTest('PowerShell copies handson to main and uploads unchanged SARIF by de
 
 runtimeTest('PowerShell uploads SARIF after copying another source branch', t => {
   for (const native of [false, true]) {
-    const f = fixture(t);
-    const original = readFileSync(f.sarifFile);
-    const result = f.run(native ? ['-SourceBranch', 'review/sort'] : ['--source-branch', 'review/sort'],
-      {}, { native, branchCopy: true });
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.reviewSha);
-    assert.deepEqual(readFileSync(f.sarifFile), original);
-    assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, f.reviewSha);
-    f.assertCleanTemp();
+    for (const branch of ['review/sort', 'handson']) {
+      const f = fixture(t);
+      const expectedSha = branch === 'handson' ? f.handsonSha : f.reviewSha;
+      const original = readFileSync(f.sarifFile);
+      const result = f.run(native ? ['-SourceBranch', branch] : ['--source-branch', branch],
+        {}, { native, branchCopy: true });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), expectedSha);
+      assert.deepEqual(readFileSync(f.sarifFile), original);
+      assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, expectedSha);
+      f.assertCleanTemp();
+    }
   }
 });
 
@@ -296,7 +298,7 @@ runtimeTest('PowerShell creates a private empty target with typed booleans and d
     MOCK_MISSING: '1', MOCK_ACTIONS: 'true', MOCK_CODEQL: 'configured', MOCK_SECURITY: 'disabled',
   }, { branchCopy: true });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, f.handsonSha);
+  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, f.sha);
   assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
   assert.match(result.stderr, /Target lookup denied/);
   assert.match(result.stdout, /Enabling Code Security/);
@@ -458,7 +460,7 @@ runtimeTest('PowerShell reports failed uploads, invalid IDs, failed polling, and
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, c.error);
     assert.doesNotMatch(result.stdout, /Copy verified:|SARIF processing complete/);
-    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha, 'Copied code is not rolled back');
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha, 'Copied code is not rolled back');
     f.assertCleanTemp();
   }
 });

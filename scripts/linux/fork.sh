@@ -11,7 +11,7 @@ export PAGER=cat
 
 # Edit these values before running from the repository root.
 SOURCE_REPO='hijigoo/github-workflow-sample'
-SOURCE_BRANCH='handson'
+SOURCE_BRANCH='main'
 TARGET_REPO='haewons-emu-org/github-workflow-sample'
 # Keep this SHA paired with the local SARIF's analyzed commit.
 ANALYZED_SHA='7e374656389ab24b71af8e409dbd434346278ace'
@@ -42,7 +42,7 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-By default, copy the tip of SOURCE_BRANCH (handson) to target main and
+By default, copy the tip of SOURCE_BRANCH (main) to target main and
 upload the existing local SARIF.
 --commit overrides branch selection: copy that analyzed SHA to target main
 and upload the existing local SARIF. It must match the SARIF's analyzed commit.

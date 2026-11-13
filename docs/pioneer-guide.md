@@ -1,7 +1,7 @@
 # 실습 기준 저장소 사전 준비 가이드
 
 GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장소를 직접 포크할 수 없습니다.
-조직 오너가 실습 준비 담당자로서 실습 정책·권한을 설정하고, 공개 원본의 `handson` 브랜치를 기업 내부 조직의 독립 기준 저장소로 복사합니다.
+조직 오너가 실습 준비 담당자로서 실습 정책·권한을 설정하고, 공개 원본의 `main` 브랜치를 기업 내부 조직의 독립 기준 저장소로 복사합니다.
 기준 저장소 생성·복사 후 커밋된 기존 SARIF를 함께 등록합니다.
 이 가이드의 범위는 실습 환경 설정과 기준 저장소 구성·확인까지입니다.
 실습자 저장소 포크·준비와 01~04 실습 권한 확인은
@@ -16,7 +16,7 @@ GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장�
 ## 준비 흐름
 
 1. 실습 준비 담당자가 조직 설정·권한과 도구를 확인합니다.
-2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 원본 `handson`을 기준 저장소의 `main`으로 복사합니다.
+2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 원본 `main`을 기준 저장소의 `main`으로 복사합니다.
 3. 복사된 커밋·SARIF 등록 결과·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
 4. 실습자 포크 생성 전에 조직의 자동 실행 차단 정책을 적용하고, 생성 직후 실습 준비 담당자가 각 포크의 Issues·보안 구성·권한을 확인한 뒤 실습 시작을 안내합니다.
 
@@ -197,7 +197,7 @@ macOS·Linux:
 
 ```bash
 bash ./scripts/linux/fork.sh \
-  --source-branch handson \
+  --source-branch main \
   --target ORG/github-workflow-sample \
   --directory ./github-workflow-sample \
   --confirm-settings
@@ -207,15 +207,15 @@ Windows:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\win\fork.ps1 `
-  -SourceBranch handson `
+  -SourceBranch main `
   -TargetRepo ORG/github-workflow-sample `
   -LocalDirectory ./github-workflow-sample `
   -ConfirmSettings
 ```
 
-기본 공개 원본은 `hijigoo/github-workflow-sample`이며 기본 원본 브랜치는 `handson`입니다.
+기본 공개 원본은 `hijigoo/github-workflow-sample`이며 기본 원본 브랜치는 `main`입니다.
 스크립트는 clone 시점의 원본 브랜치 커밋을 대상 `main`으로 복사한 뒤, 로컬 `code-scanning.sarif`를 업로드하고 처리 완료까지 확인합니다.
-원본 브랜치에 포함된 변경만 복사되므로 로컬에서 수정한 가이드는 원격 `handson`에 반영돼 있어야 합니다.
+원본 브랜치에 포함된 변경만 복사되므로 로컬에서 수정한 가이드는 원격 `main`에 반영돼 있어야 합니다.
 
 기존 분석 커밋의 코드와 SARIF를 함께 준비해야 한다면 별도의 빈 대상 저장소에
 `--commit FULL_SHA` 또는 `-AnalyzedSha FULL_SHA`를 명시합니다. 이 옵션은 원본 브랜치 선택보다 우선하며 고정 커밋 복사와 SARIF 업로드를 수행합니다.
@@ -230,7 +230,7 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 
 ### 생성 결과와 포크 정책 확인
 
-* 실행 출력의 `Source branch: handson`, `SARIF processing complete:`, `Copy verified:` 확인
+* 실행 출력의 `Source branch: main`, `SARIF processing complete:`, `Copy verified:` 확인
 * 기준 저장소 `main`이 실행 출력의 복사된 커밋과 일치하는지 확인
 * 기준 저장소에 복사된 SARIF 파일을 GitHub 웹에서 열 수 있는지 확인
 * Actions와 CodeQL 자동 분석이 비활성화돼 있는지 확인
@@ -251,7 +251,7 @@ API 접수만으로 등록 성공을 판단하지 않으며, 경고가 보이지
 | Code Security 활성화·등록 거부 | 라이선스·비용 승인·정책과 Code scanning 쓰기 권한 확인 |
 | 내부 포크 허용 설정 불가 | 기업·조직·기준 저장소의 정책과 허용 가능한 대상 조직을 관리자에게 확인 |
 | 대상 저장소 또는 로컬 폴더가 이미 있음 | 덮어쓰지 않고 복사 결과 확인. SARIF 등록만 할 때는 `--upload-only` 또는 `-UploadOnly` 사용 |
-| 원본 브랜치가 없음 | 원본 저장소의 `handson` 존재 여부와 `--source-branch` 또는 `-SourceBranch` 값 확인 |
+| 원본 브랜치가 없음 | 원본 저장소의 `main` 존재 여부와 `--source-branch` 또는 `-SourceBranch` 값 확인 |
 | SHA 불일치 | 고정 SHA 복사 모드에서는 대상 `main`과 복사할 SHA의 일치 확인 |
 | 업로드 처리 대기·실패 | 업로드 ID의 기존 처리 상태를 확인한 뒤 재시도 |
 
