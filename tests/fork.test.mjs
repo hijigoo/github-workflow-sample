@@ -189,27 +189,31 @@ test('pioneer script uploads SARIF onto current main without analyzed commit his
   assert.ok(f.requests().every(args => args.some(arg => arg.startsWith('repos/example/target/'))));
 });
 
-test('pioneer script copies handson to main by default without requiring or uploading SARIF', t => {
+test('pioneer script copies handson to main and uploads unchanged SARIF by default', t => {
   const f = fixture(t);
-  const result = f.run(['--sarif', `${f.sarifFile}-missing`], {}, { branchCopy: true });
+  const original = readFileSync(f.sarifFile, 'utf8');
+  const result = f.run([], {}, { branchCopy: true });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
   assert.equal(f.git(['--git-dir', f.target, 'show', 'main:handson-only.txt']), 'Hands-on branch content');
   assert.equal(f.git(['--git-dir', f.target, 'for-each-ref', '--format=%(refname)']), 'refs/heads/main');
   assert.match(result.stdout, /Source branch: handson/);
-  assert.match(result.stdout, /SARIF upload skipped:/);
-  assert.equal(f.requests().some(args => args.some(arg => arg.includes('/code-scanning/sarifs'))), false);
-  assert.equal(existsSync(f.env.MOCK_UPLOAD_BODY), false);
+  assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
+  const payload = JSON.parse(readFileSync(f.env.MOCK_UPLOAD_BODY, 'utf8'));
+  assert.equal(payload.commit_sha, f.handsonSha);
+  assert.equal(payload.ref, 'refs/heads/main');
+  assert.equal(gunzipSync(Buffer.from(payload.sarif, 'base64')).toString(), original);
+  assert.equal(readFileSync(f.sarifFile, 'utf8'), original);
 });
 
-test('pioneer script allows another source branch without mislabelling existing SARIF', t => {
+test('pioneer script uploads SARIF after copying another source branch', t => {
   const f = fixture(t);
   const original = readFileSync(f.sarifFile, 'utf8');
   const result = f.run(['--source-branch', 'review/sort'], {}, { branchCopy: true });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.reviewSha);
   assert.equal(readFileSync(f.sarifFile, 'utf8'), original);
-  assert.equal(existsSync(f.env.MOCK_UPLOAD_BODY), false);
+  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD_BODY, 'utf8')).commit_sha, f.reviewSha);
 });
 
 test('pioneer script rejects invalid or missing source branches without pushing', t => {
@@ -314,11 +318,11 @@ test('pioneer script reports SARIF upload and processing failures without claimi
     { MOCK_UPLOAD_STATE: 'unexpected' },
   ]) {
     const f = fixture(t);
-    const result = f.run([], overrides);
+    const result = f.run([], overrides, { branchCopy: true });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /ERROR: (SARIF|Unexpected SARIF)/);
     assert.doesNotMatch(result.stdout, /SARIF processing complete:|Copy verified:/);
-    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha);
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
   }
 });
 
@@ -350,7 +354,7 @@ test('pioneer script rejects missing, empty, or directory SARIF paths before API
   const empty = join(f.destination, '..', 'empty.sarif');
   writeFileSync(empty, '');
   for (const path of [`${empty}-missing`, empty, join(f.destination, '..')]) {
-    const result = f.run(['--sarif', path]);
+    const result = f.run(['--sarif', path], {}, { branchCopy: true });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /Local SARIF must be/);
     assert.equal(existsSync(f.destination), false);
@@ -396,9 +400,11 @@ test('pioneer script creates a missing private target and disables automation be
   const result = f.run([], {
     MOCK_TARGET_MISSING: 'true', MOCK_ACTIONS: 'true', MOCK_CODEQL: 'configured',
     MOCK_SECURITY: 'disabled',
-  });
+  }, { branchCopy: true });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha);
+  assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
+  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD_BODY, 'utf8')).commit_sha, f.handsonSha);
+  assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
   const requests = f.requests();
   const creation = requests.find(args => args.includes('orgs/example/repos'));
   assert.ok(creation.includes('name=target'));

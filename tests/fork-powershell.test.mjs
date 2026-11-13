@@ -207,24 +207,27 @@ runtimeTest('PowerShell uploads SARIF onto current main without analyzed commit 
   }
 });
 
-runtimeTest('PowerShell copies handson to main by default without requiring or uploading SARIF', t => {
+runtimeTest('PowerShell copies handson to main and uploads unchanged SARIF by default', t => {
   for (const native of [false, true]) {
     const f = fixture(t);
-    rmSync(f.sarifFile);
+    const original = readFileSync(f.sarifFile);
     const result = f.run([], {}, { native, branchCopy: true });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha);
     assert.equal(f.git(['--git-dir', f.target, 'show', 'main:handson-only.txt']), 'Hands-on branch content');
     assert.equal(f.git(['--git-dir', f.target, 'for-each-ref', '--format=%(refname)']), 'refs/heads/main');
     assert.match(result.stdout, /Source branch: handson/);
-    assert.match(result.stdout, /SARIF upload skipped:/);
-    assert.equal(f.requests().some(a => a.some(v => v.includes('/code-scanning/sarifs'))), false);
-    assert.equal(existsSync(f.env.MOCK_UPLOAD), false);
+    assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
+    const payload = JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8'));
+    assert.equal(payload.commit_sha, f.handsonSha);
+    assert.equal(payload.ref, 'refs/heads/main');
+    assert.deepEqual(gunzipSync(Buffer.from(payload.sarif, 'base64')), original);
+    assert.deepEqual(readFileSync(f.sarifFile), original);
     f.assertCleanTemp();
   }
 });
 
-runtimeTest('PowerShell allows another source branch without mislabelling existing SARIF', t => {
+runtimeTest('PowerShell uploads SARIF after copying another source branch', t => {
   for (const native of [false, true]) {
     const f = fixture(t);
     const original = readFileSync(f.sarifFile);
@@ -233,7 +236,7 @@ runtimeTest('PowerShell allows another source branch without mislabelling existi
     assert.equal(result.status, 0, result.stderr);
     assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.reviewSha);
     assert.deepEqual(readFileSync(f.sarifFile), original);
-    assert.equal(existsSync(f.env.MOCK_UPLOAD), false);
+    assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, f.reviewSha);
     f.assertCleanTemp();
   }
 });
@@ -291,8 +294,10 @@ runtimeTest('PowerShell creates a private empty target with typed booleans and d
   const f = fixture(t);
   const result = f.run([], {
     MOCK_MISSING: '1', MOCK_ACTIONS: 'true', MOCK_CODEQL: 'configured', MOCK_SECURITY: 'disabled',
-  });
+  }, { branchCopy: true });
   assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(readFileSync(f.env.MOCK_UPLOAD, 'utf8')).commit_sha, f.handsonSha);
+  assert.match(result.stdout, /SARIF processing complete:[\s\S]*Copy verified:/);
   assert.match(result.stderr, /Target lookup denied/);
   assert.match(result.stdout, /Enabling Code Security/);
   for (const marker of ['MOCK_CREATED', 'MOCK_ACTIONS_DISABLED', 'MOCK_CODEQL_DISABLED', 'MOCK_SECURITY_ENABLED']) {
@@ -368,7 +373,7 @@ runtimeTest('PowerShell validates arguments, settings confirmation, and existing
     writeFileSync(configured, readFileSync(script, 'utf8').replace(
       '[bool]$SettingsConfirmed = $true', `[bool]$SettingsConfirmed = $${c.confirmed === false ? 'false' : 'true'}`,
     ));
-    const result = f.run(c.args || [], {}, { scriptPath: configured });
+    const result = f.run(c.args || [], {}, { scriptPath: configured, branchCopy: true });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, c.error);
     assert.equal(f.requests().length, 0);
@@ -449,11 +454,11 @@ runtimeTest('PowerShell reports failed uploads, invalid IDs, failed polling, and
     { env: { MOCK_STATE: 'unexpected' }, error: /Unexpected SARIF processing status/ },
   ]) {
     const f = fixture(t);
-    const result = f.run([], c.env);
+    const result = f.run([], c.env, { branchCopy: true });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, c.error);
     assert.doesNotMatch(result.stdout, /Copy verified:|SARIF processing complete/);
-    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.sha, 'Copied code is not rolled back');
+    assert.equal(f.git(['--git-dir', f.target, 'rev-parse', 'main']), f.handsonSha, 'Copied code is not rolled back');
     f.assertCleanTemp();
   }
 });

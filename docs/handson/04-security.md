@@ -25,7 +25,7 @@ CodeQL이 분석을 수행하고, SARIF는 그 결과를 담으며, GitHub의 Co
 
 제공된 기준 저장소의 `Security and quality → Code scanning`에서 등록된 CodeQL 경고를 열거나,
 커밋된 [SARIF](../../code-scanning.sarif)를 GitHub 웹에서 엽니다.
-기준 저장소에는 기존 SARIF를 자동 등록하지 않으므로, 경고 목록이 비어 있으면 파일을 사용합니다.
+기준 저장소에는 준비 과정에서 기존 SARIF가 등록됩니다. 경고를 조회할 수 없으면 파일을 사용합니다.
 본인 포크에 이미 경고가 등록돼 있으면 그 결과를 사용해도 됩니다.
 GitHub 우측 상단의 Copilot 아이콘을 클릭한 뒤 [New Session](https://github.com/copilot) 메뉴를 클릭합니다.
 본인의 실습 저장소를 연결하고 경고 또는 SARIF 파일 링크를 붙여 자연어로 요청합니다.

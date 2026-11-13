@@ -2,7 +2,7 @@
 
 GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장소를 직접 포크할 수 없습니다.
 조직 오너가 Pioneer 역할로 실습 정책·권한을 설정하고, 공개 원본의 `handson` 브랜치를 기업 내부 조직의 독립 기준 저장소로 복사합니다.
-커밋된 기존 SARIF는 웹에서 읽을 분석 자료로 사용하며, 기준 저장소 생성 시 자동 등록하지 않습니다.
+기준 저장소 생성·복사 후 커밋된 기존 SARIF를 함께 등록합니다.
 이 가이드의 범위는 실습 환경 설정과 기준 저장소 구성·확인까지입니다.
 실습자 저장소 포크·준비와 01~04 실습 권한 확인은
 [00. 실습을 위한 저장소 사전 준비](handson/00-preparation.md)에서 진행합니다.
@@ -17,7 +17,7 @@ GHEC Enterprise Managed Users(EMU) 조직에서는 기업 외부 공개 저장�
 
 1. Pioneer가 조직 설정·권한과 도구를 확인합니다.
 2. [Bash](../scripts/linux/fork.sh) 또는 [PowerShell](../scripts/win/fork.ps1) 준비 스크립트로 원본 `handson`을 기준 저장소의 `main`으로 복사합니다.
-3. 복사된 커밋·SARIF 파일·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
+3. 복사된 커밋·SARIF 등록 결과·자동 실행 차단과 내부 포크 허용 정책을 확인합니다.
 
 > [!IMPORTANT]
 > 준비 스크립트와 SARIF 등록에는 Actions runner를 사용하지 않습니다.
@@ -61,7 +61,7 @@ Enterprise 정책으로 잠긴 항목은 기업 관리자에게 요청하며, �
 조직에서 GHAS 이용을 허용하는 것만으로 모든 저장소의 Code scanning 접근이 보장되지는 않습니다.
 저장소별 Code Security 적용과 사용자 권한을 확인하고, 실습 대상 계정으로 본인 포크의
 `Security and quality → Code scanning` 메뉴를 열 수 있는지 점검합니다.
-경고 결과는 별도 SARIF 등록이 필요하며, 기본 실습에서 포크에 경고가 없어도 준비 실패로 판단하지 않습니다.
+기준 저장소에서는 준비 스크립트가 등록한 경고를 확인합니다. 실습자 포크에 경고가 없으면 기준 저장소의 결과 또는 복사된 SARIF 파일을 사용합니다.
 경고 목록 열람에는 저장소 쓰기 권한 등 해당 보안 기능 접근 권한이 필요하며, 코드 읽기만으로 충분하다고 가정하지 않습니다.
 
 설정 근거: [Copilot Seat 부여](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-access/grant-access),
@@ -108,7 +108,7 @@ Actions 비활성화만으로 모든 진입점의 실행 환경이 확인되는 
 | OS | 설치할 도구 |
 |----|-------------|
 | Windows | GitHub CLI (`gh`), Git CLI, PowerShell 7.4 이상 (`pwsh`) |
-| macOS·Linux | GitHub CLI (`gh`), Git CLI, Bash. SARIF 등록 시에만 `gzip`, `base64`, `tr`, `mktemp`, `sleep` 추가 |
+| macOS·Linux | GitHub CLI (`gh`), Git CLI, Bash, `gzip`, `base64`, `tr`, `mktemp`, `sleep` |
 
 이 저장소의 코드와 커밋된 [code-scanning.sarif](../code-scanning.sarif)를 준비 PC에 내려받습니다.
 SARIF는 따로 생성하거나 새 분석으로 만들지 않습니다.
@@ -173,14 +173,14 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 ```
 
 기본 공개 원본은 `hijigoo/github-workflow-sample`이며 기본 원본 브랜치는 `handson`입니다.
-스크립트는 clone 시점의 원본 브랜치 커밋을 대상 `main`으로 복사하고, 기존 SARIF의 자동 업로드는 생략합니다.
+스크립트는 clone 시점의 원본 브랜치 커밋을 대상 `main`으로 복사한 뒤, 로컬 `code-scanning.sarif`를 업로드하고 처리 완료까지 확인합니다.
 원본 브랜치에 포함된 변경만 복사되므로 로컬에서 수정한 가이드는 원격 `handson`에 반영돼 있어야 합니다.
 
 기존 분석 커밋의 코드와 SARIF를 함께 준비해야 한다면 별도의 빈 대상 저장소에
 `--commit FULL_SHA` 또는 `-AnalyzedSha FULL_SHA`를 명시합니다. 이 옵션은 원본 브랜치 선택보다 우선하며 고정 커밋 복사와 SARIF 업로드를 수행합니다.
 기본 실습용 기준 저장소를 이 방식으로 덮어쓰지 않으며, SARIF와 분석 SHA의 짝은 준비 담당자가 확인합니다.
 
-복사된 SARIF를 신규 저장소의 현재 `main`에 바로 표시하려면
+이미 복사한 저장소에 SARIF 업로드만 다시 수행하려면
 [04번의 선택 등록 실습](handson/04-security.md#선택-실습-기존-sarif-등록)의 `--upload-only` 또는 `-UploadOnly`를 사용합니다.
 
 새 대상에는 Actions와 CodeQL default setup을 비활성화하고 필요한 Code Security 설정을 적용합니다.
@@ -189,16 +189,15 @@ pwsh -NoProfile -File .\scripts\win\fork.ps1 `
 
 ### 생성 결과와 포크 정책 확인
 
-* 실행 출력의 `Source branch: handson`, `SARIF upload skipped:`, `Copy verified:` 확인
+* 실행 출력의 `Source branch: handson`, `SARIF processing complete:`, `Copy verified:` 확인
 * 기준 저장소 `main`이 실행 출력의 복사된 커밋과 일치하는지 확인
 * 기준 저장소에 복사된 SARIF 파일을 GitHub 웹에서 열 수 있는지 확인
 * Actions와 CodeQL 자동 분석이 비활성화돼 있는지 확인
 * 기업·조직 정책과 저장소 설정에서 실습 대상 조직으로 private 저장소 포크가 허용되는지 확인
 
 기준 저장소의 `main`에는 추가 커밋하지 않습니다.
-기본 준비에서는 SARIF를 자동 등록하지 않으므로 Code scanning 경고 목록이 비어 있어도 정상입니다.
-별도로 SARIF를 등록한 경우에만 `SARIF processing complete:`와 웹 결과의 등록 대상 커밋을 확인하며,
-API 접수만으로 등록 성공을 판단하지 않습니다.
+`SARIF processing complete:`와 기준 저장소의 Code scanning 경고 두 건을 확인합니다.
+API 접수만으로 등록 성공을 판단하지 않으며, 경고가 보이지 않으면 처리 상태·필터·권한을 확인합니다.
 
 ## 3. 준비 중 문제가 생겼을 때
 

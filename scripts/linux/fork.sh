@@ -42,8 +42,8 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-By default, copy the tip of SOURCE_BRANCH (handson) to target main without
-uploading SARIF. An existing SARIF may describe an older analyzed commit.
+By default, copy the tip of SOURCE_BRANCH (handson) to target main and
+upload the existing local SARIF.
 --commit overrides branch selection: copy that analyzed SHA to target main
 and upload the existing local SARIF. It must match the SARIF's analyzed commit.
 The local SARIF is not modified or downloaded. Optionally copy one review
@@ -191,18 +191,15 @@ main() {
     [[ ! -e "${directory}" && ! -L "${directory}" ]] ||
       err "Local destination already exists; choose a new path."
   fi
-  if [[ "${fixed_commit}" == true || "${upload_only}" == true ]]; then
-    [[ -f "${sarif_file}" && -r "${sarif_file}" && -s "${sarif_file}" ]] ||
-      err "Local SARIF must be an existing readable, nonempty file: ${sarif_file}"
-  fi
+  [[ -f "${sarif_file}" && -r "${sarif_file}" && -s "${sarif_file}" ]] ||
+    err "Local SARIF must be an existing readable, nonempty file: ${sarif_file}"
 
   command -v git >/dev/null || err "Install Git first."
   command -v gh >/dev/null || err "Install GitHub CLI (gh) first."
-  if [[ "${fixed_commit}" == true || "${upload_only}" == true ]]; then
-    for tool in gzip base64 tr mktemp sleep; do
-      command -v "${tool}" >/dev/null || err "Install ${tool} first."
-    done
-  else
+  for tool in gzip base64 tr mktemp sleep; do
+    command -v "${tool}" >/dev/null || err "Install ${tool} first."
+  done
+  if [[ "${fixed_commit}" == false && "${upload_only}" == false ]]; then
     [[ -n "${source_branch}" ]] ||
       err "--source-branch must be a valid branch name."
     git_safe check-ref-format --branch "${source_branch}" >/dev/null ||
@@ -299,10 +296,11 @@ main() {
   printf 'Source: %s\nTarget: %s\nLocal path: %s\n' \
     "${source_url}" "${target_url}" "${directory}"
   if [[ "${fixed_commit}" == true ]]; then
-    printf 'Analyzed SHA: %s\nUsing local SARIF: %s\n' "${commit}" "${sarif_file}"
+    printf 'Analyzed SHA: %s\n' "${commit}"
   else
     printf 'Source branch: %s\n' "${source_branch}"
   fi
+  printf 'Using local SARIF: %s\n' "${sarif_file}"
   git_safe clone --no-checkout --no-tags "${source_url}" "${directory}"
   if [[ "${fixed_commit}" == false ]]; then
     commit=$(git_safe -C "${directory}" rev-parse \
@@ -350,21 +348,15 @@ main() {
   [[ "${default_branch}" == main ]] ||
     err "Copy completed, but set the target default branch to main manually."
 
-  if [[ "${fixed_commit}" == true ]]; then
-    upload_sarif "${target}" "${sarif_file}"
-  else
-    printf 'SARIF upload skipped: source branch copied; existing SARIF is historical analysis data.\n'
-  fi
+  upload_sarif "${target}" "${sarif_file}"
 
   printf '\nCopy verified: https://github.com/%s\nmain: %s\n' \
     "${target}" "${remote_sha}"
-  if [[ "${fixed_commit}" == true ]]; then
-    printf 'Local SARIF file (unchanged): %s\n' "${sarif_file}"
-  fi
+  printf 'Local SARIF file (unchanged): %s\n' "${sarif_file}"
   if [[ -n "${review_branch}" ]]; then
     printf 'Review branch: %s (%s)\n' "${review_branch}" "${review_commit}"
   fi
-  printf 'Keep Actions disabled. Verify fork policies and distribute SARIF separately.\n'
+  printf 'Keep Actions disabled. Verify fork policies and Code scanning results.\n'
 }
 
 main "$@"

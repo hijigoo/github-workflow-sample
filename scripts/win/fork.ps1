@@ -14,7 +14,7 @@
 .PARAMETER SourceRepo
     Public source repository in OWNER/REPO form.
 .PARAMETER SourceBranch
-    Source branch copied to target main without uploading SARIF; defaults to handson.
+    Source branch copied to target main before SARIF upload; defaults to handson.
 .PARAMETER TargetRepo
     Private or internal target repository in ORG/REPO form.
 .PARAMETER AnalyzedSha
@@ -109,8 +109,8 @@ Create a private empty target if missing and disable its Actions and CodeQL
 default setup before copying. Enable Code Security on an empty target if needed
 (requires permissions and licensing; costs may apply). Existing Actions and
 CodeQL default setup settings are not changed.
-By default, copy the tip of SourceBranch (handson) to target main without
-uploading SARIF. An existing SARIF may describe an older analyzed commit.
+By default, copy the tip of SourceBranch (handson) to target main and
+upload the existing local SARIF.
 -AnalyzedSha / --commit overrides branch selection: copy that analyzed SHA
 to target main and upload the existing local SARIF. It must match that SARIF.
 The local SARIF is not modified or downloaded. Optionally copy one review
@@ -349,18 +349,16 @@ function Invoke-RepositoryCopy {
     if (-not $UploadOnly -and (Get-Item -LiteralPath $Directory -Force -ErrorAction SilentlyContinue)) {
         throw 'Local destination already exists; choose a new path.'
     }
-    if ($FixedCommit -or $UploadOnly) {
-        $SarifItem = Get-Item -LiteralPath $SarifFile -Force -ErrorAction SilentlyContinue
-        if ($null -eq $SarifItem -or $SarifItem.PSIsContainer -or $SarifItem.Length -eq 0) {
-            throw "Local SARIF must be an existing readable, nonempty file: $SarifFile"
-        }
-        try {
-            $Readable = [System.IO.File]::OpenRead($SarifItem.FullName)
-            $Readable.Dispose()
-        }
-        catch { throw "Local SARIF must be an existing readable, nonempty file: $SarifFile" }
-        $SarifFile = $SarifItem.FullName
+    $SarifItem = Get-Item -LiteralPath $SarifFile -Force -ErrorAction SilentlyContinue
+    if ($null -eq $SarifItem -or $SarifItem.PSIsContainer -or $SarifItem.Length -eq 0) {
+        throw "Local SARIF must be an existing readable, nonempty file: $SarifFile"
     }
+    try {
+        $Readable = [System.IO.File]::OpenRead($SarifItem.FullName)
+        $Readable.Dispose()
+    }
+    catch { throw "Local SARIF must be an existing readable, nonempty file: $SarifFile" }
+    $SarifFile = $SarifItem.FullName
     foreach ($Tool in @('git', 'gh')) {
         if (-not (Get-Command $Tool -CommandType Application -ErrorAction SilentlyContinue)) {
             throw "Install $Tool first."
@@ -458,9 +456,10 @@ function Invoke-RepositoryCopy {
     if ($CodeqlState -cne 'not-configured') { throw 'Disable target CodeQL default setup before copying.' }
     Write-Host "Source: $SourceUrl`nTarget: $TargetUrl`nLocal path: $Directory"
     if ($FixedCommit) {
-        Write-Host "Analyzed SHA: $Commit`nUsing local SARIF: $SarifFile"
+        Write-Host "Analyzed SHA: $Commit"
     }
     else { Write-Host "Source branch: $Branch" }
+    Write-Host "Using local SARIF: $SarifFile"
     $CloneOutput = Invoke-SafeGit -ArgumentList @('clone', '--no-checkout', '--no-tags', $SourceUrl, $Directory)
     if ($CloneOutput) { Write-Host $CloneOutput }
     if (-not $FixedCommit) {
@@ -501,16 +500,11 @@ function Invoke-RepositoryCopy {
     if ($RemoteSha -cne $Commit) { throw 'Remote main does not match the copied SHA; inspect the target.' }
     $DefaultBranch = Invoke-Gh -ArgumentList @('api', '--hostname', 'github.com', "repos/$Target", '--jq', '.default_branch')
     if ($DefaultBranch -cne 'main') { throw 'Copy completed, but set the target default branch to main manually.' }
-    if ($FixedCommit) {
-        Send-Sarif -Target $Target -SarifFile $SarifFile
-    }
-    else {
-        Write-Host 'SARIF upload skipped: source branch copied; existing SARIF is historical analysis data.'
-    }
+    Send-Sarif -Target $Target -SarifFile $SarifFile
     Write-Host "`nCopy verified: https://github.com/$Target`nmain: $RemoteSha"
-    if ($FixedCommit) { Write-Host "Local SARIF file (unchanged): $SarifFile" }
+    Write-Host "Local SARIF file (unchanged): $SarifFile"
     if ($ReviewBranch) { Write-Host "Review branch: $ReviewBranch ($ReviewCommit)" }
-    Write-Host 'Keep Actions disabled. Verify fork policies and distribute SARIF separately.'
+    Write-Host 'Keep Actions disabled. Verify fork policies and Code scanning results.'
 }
 #endregion Functions
 

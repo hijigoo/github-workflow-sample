@@ -4,5 +4,6 @@ artifacts/
 reports/
 test-results/
 playwright-report/
+/github-workflow-sample/
 .DS_Store
 *.log
