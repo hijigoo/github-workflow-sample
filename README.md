@@ -1,114 +1,41 @@
 # GitHub Workflow Sample
 
-**가상 문의 조회 사례를 통해 GitHub의 실제 기록을 열어 보는 샘플 저장소입니다.**
-수강자가 코드를 바꾸거나 PR을 만드는 실습 과제가 아닙니다.
+이 저장소는 GitHub 워크플로를 처음 접하는 사람을 위한 **기록 열람 샘플**입니다.
+가상의 고객 문의 기능이 요구사항에서 릴리스까지 이어지는 과정을 살펴보며,
+각 단계에서 무엇을 확인하는지 익힐 수 있습니다. 코드를 수정하거나 PR을 만드는 실습은 필요하지 않습니다.
 
-브랜치·요구사항·PR·리뷰·댓글·검증·승인·배포·릴리스는 실제 GitHub 기록입니다.
-문의 데이터와 PM·수행사 역할, 업무 판단은 가상입니다.
+**처음이라면 [요구사항 Issue #2](https://github.com/hijigoo/github-workflow-sample/issues/2)부터 아래 순서로 열어 보세요.**
 
-**먼저 보기:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 PR](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 공지](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
+## 권장 열람 순서
 
-## 문서 길잡이
-
-[실제 화면과 열람 안내](#실제-화면과-열람-안내) · [네 가지 노트](#네-가지-노트) · [브랜치와 변경 이력](#브랜치와-변경-이력) · [검증·승인·배포를 대조하기](#검증승인배포를-대조하기) · [세 가지 보안 기능](#세-가지-보안-기능) · [저장소에서 열어 볼 파일](#저장소에서-열어-볼-파일) · [실제 자동화와 가상 역할](#실제-자동화와-가상-역할) · [안전한 샘플 범위](#안전한-샘플-범위) · [패키지 소스](#패키지-소스)
-
-## 실제 화면과 열람 안내
-
-[운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) · [QA 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) · [어디에서 무엇을 볼지](docs/reading-guide.md) · [보안 리포트와 확인 경로](docs/security-report.md)
-
-![완료 상태와 10월 기간을 적용하여 가상 문의 두 건을 조회한 실제 게시 화면](docs/images/inquiry-query.png)
-
-## 네 가지 노트
-
-같은 문의 조회 요청에 상태·기간 검색, 잘못된 기간 안내, 빈 결과 안내를 추가하는 사례입니다.
-
-| 노트 | GitHub 기록 | 연결 방향 |
+| 순서 | 열어 볼 기록 | 확인할 내용 |
 |---|---|---|
-| 기능 추가 노트 | [상태 검색 #3](https://github.com/hijigoo/github-workflow-sample/pull/3), [기간 검색 #4](https://github.com/hijigoo/github-workflow-sample/pull/4) | `feature/status · feature/date → dev` |
-| 배포 준비 노트 | [포함 목록·QA·주의사항 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) | `dev → release/v1.1` |
-| 릴리스 반영 노트 | [업무 확인·운영 승인·롤백 기준 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) | `release/v1.1 → main` |
-| 최종 릴리스 공지 | [v1.1.0 GitHub Release](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0) | `main`의 태그와 공지·배포 파일 |
+| 1. 요구사항 | [Issue #2](https://github.com/hijigoo/github-workflow-sample/issues/2) | 무엇을 바꾸려는지, 완료 조건은 무엇인지 |
+| 2. 기능 개발과 리뷰 | [상태 검색 PR #3](https://github.com/hijigoo/github-workflow-sample/pull/3), [기간 검색 PR #4](https://github.com/hijigoo/github-workflow-sample/pull/4) | 변경 내용, 리뷰와 질문·답변, 검증 결과 |
+| 3. 검증과 QA | [배포 준비 PR #5](https://github.com/hijigoo/github-workflow-sample/pull/5) | 포함할 변경, 테스트·QA, 미완성 후보를 배포하지 않은 이유 |
+| 4. 운영 승인과 배포 | [릴리스 반영 PR #6](https://github.com/hijigoo/github-workflow-sample/pull/6) | 업무 확인, 운영 승인, 배포와 롤백 기준 |
+| 5. 릴리스 | [v1.1.0 공지와 파일](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0) | 최종 배포 버전과 변경 사항 |
 
-체크 상태는 노트 작성 시점의 기록입니다. 당시 남아 있던 QA·운영 승인은 **후속 댓글과 실행 결과**에서 이어 확인합니다.
+흐름은 **요구사항 → 기능 개발·리뷰 → 검증·QA → 운영 승인·배포 → 릴리스**입니다.
+각 기록의 자세한 열람 순서와 화면에서 볼 항목은 [GitHub 기록 열람 가이드](docs/reading-guide.md)에 정리했습니다.
 
-## 브랜치와 변경 이력
+## 함께 볼 자료
 
-[main](https://github.com/hijigoo/github-workflow-sample/tree/main) · [dev](https://github.com/hijigoo/github-workflow-sample/tree/dev) · [feature/status](https://github.com/hijigoo/github-workflow-sample/tree/feature/status) · [feature/date](https://github.com/hijigoo/github-workflow-sample/tree/feature/date) · [release/v1.1](https://github.com/hijigoo/github-workflow-sample/tree/release/v1.1)
+- [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) · [QA 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/): 가상 문의 데이터를 조건별로 조회합니다.
+- [요구사항 문서](docs/requirements/v1.1.0.md) · [릴리스 노트](docs/release-notes/v1.1.0.md): Issue와 Release의 세부 내용을 확인합니다.
+- [보안 리포트](docs/security-report.md): 보안 경고의 상태·조치와 원본을 볼 수 없을 때의 대체 확인 경로를 안내합니다.
+- [Copilot 핸즈온 안내](docs/handson/README.md): 이 기록 열람 샘플과는 별도로, 승인된 환경에서 진행하는 실습입니다.
 
-강의와 같은 브랜치 이름을 유지했습니다. [release → dev 역병합 #7](https://github.com/hijigoo/github-workflow-sample/pull/7)과 [보안 조치 브랜치](https://github.com/hijigoo/github-workflow-sample/tree/release/v1.1.1)도 볼 수 있습니다.
-병합한 기능·릴리스 브랜치는 삭제하지 않았습니다.
+## 실제 기록과 샘플 데이터 구분하기
 
-## 검증·승인·배포를 대조하기
+브랜치, Issue, PR, 리뷰, 자동 검증, 승인, 배포와 릴리스는 GitHub에 남은 **실제 기록**입니다.
+문의 데이터와 PM·수행사 역할, 업무 판단은 설명을 위한 **가상 예시**입니다.
+PR 노트는 GitHub Actions bot이 작성했으며, Copilot이 개발·리뷰한 기록을 뜻하지 않습니다.
 
-| 볼 기록 | 실제 링크 | 읽을 포인트 |
-|---|---|---|
-| 기능 검증 실패 → 보완 | [기간 변경 실패](https://github.com/hijigoo/github-workflow-sample/actions/runs/41294353825), [보완 후 검증](https://github.com/hijigoo/github-workflow-sample/actions/runs/41294488062) | 정상·예외·기존 조회 결과 |
-| 질문과 답변 | [PM 질문·수행사 답변 #4](https://github.com/hijigoo/github-workflow-sample/pull/4#issuecomment-6556348093) | 확인한 것과 남은 작업 |
-| 미완성 후보의 취소 | [처음 release 실행](https://github.com/hijigoo/github-workflow-sample/actions/runs/41294211185) | Build 성공이어도 요청 전체가 포함된 것은 아님 |
-| 최종 QA | [Build·Test·QA 승인·배포](https://github.com/hijigoo/github-workflow-sample/actions/runs/41295071790) | 실행 커밋·검증 보고서·배포 파일 |
-| 운영 샘플 승격 | [운영 승인·동일 파일 배포](https://github.com/hijigoo/github-workflow-sample/actions/runs/41295786524) | QA 파일을 재빌드 없이 게시 |
+보안 예시도 실제 서비스의 안전 보증은 아닙니다. `src/inquiries/repository.ts`는 CodeQL 분석을 보여 주기 위한
+비배포 격리 코드이고, `lodash@4.17.20`은 경고를 관찰하는 개발 의존성입니다.
+Secret scanning 예시는 미발급 시험 문자열이며 실제 키가 아닙니다.
+보안 경고·설정과 Actions 보고서는 로그인 및 계정 권한에 따라 열리지 않을 수 있습니다.
+기능별 제한과 상세 증빙은 [보안 리포트](docs/security-report.md)를 참고하세요.
 
-QA·운영·Release의 `inquiry-app-v1.1.0.tar.gz` SHA-256은 같습니다.
-
-```text
-80134ab4381b087eccf420dc82b0eda2951503f570aa7376abd558aba523835b
-```
-
-[QA 파일 증빙](https://hijigoo.github.io/github-workflow-sample/qa/release-evidence.json) · [운영 파일 증빙](https://hijigoo.github.io/github-workflow-sample/deployment-evidence.json) · [Release 배포 파일](https://github.com/hijigoo/github-workflow-sample/releases/download/v1.1.0/inquiry-app-v1.1.0.tar.gz)
-
-Actions 보고서는 보존 기한이 있습니다. 최종 배포 파일과 증빙 JSON은 Release에도 첨부했습니다.
-
-## 세 가지 보안 기능
-
-| 기능 | 실제 샘플 | 구분할 것 |
-|---|---|---|
-| Dependabot | [원본 경고](https://github.com/hijigoo/github-workflow-sample/security/dependabot), [자동 버전 업데이트 PR #1](https://github.com/hijigoo/github-workflow-sample/pull/1) | 의존성 경고, 보안 업데이트, 버전 업데이트는 별개 |
-| Code scanning | [SQL 경고 #1](https://github.com/hijigoo/github-workflow-sample/security/code-scanning/1), [조치 PR #8](https://github.com/hijigoo/github-workflow-sample/pull/8), [격리 예시 Dismissed #2](https://github.com/hijigoo/github-workflow-sample/security/code-scanning/2) | GitHub 기능 이름은 Code scanning, 분석 엔진은 CodeQL |
-| Secret scanning | [원본 기록 #1](https://github.com/hijigoo/github-workflow-sample/security/secret-scanning/1), [미발급 시험 문자열 증빙](docs/security/evidence/never-issued-token.json) | 실제 Push protection 차단·시험 데이터 예외·종료 기록 |
-
-보안 원본은 로그인 계정과 권한에 따라 열리지 않을 수 있습니다.
-권한이 없는 열람자는 [민감 값 없는 공개 보안 리포트](docs/security-report.md)에서 같은 상태·조치·원본 링크를 확인할 수 있습니다.
-
-## 저장소에서 열어 볼 파일
-
-| 위치 | 내용 |
-|---|---|
-| [web](web) | 실제 공개 문의 화면, 가상 데이터, 상태·기간 조회 |
-| [요구사항 기록](docs/requirements/v1.1.0.md) | 요청과 완료 조건 |
-| [PR 노트 템플릿](.github/PULL_REQUEST_TEMPLATE) | 네 노트의 작성 구조 |
-| [최종 릴리스 문안](docs/release-notes/v1.1.0.md) | 기능·주의사항·포함 변경·Changelog |
-| [Actions 정의](.github/workflows) | 검증·CodeQL 분석·QA·운영 승격·샘플 PR 작성 |
-| [Dependabot 설정](.github/dependabot.yml) | 버전 확인 일정과 패키지 소스 |
-| [코드 분석 격리 예시](src/inquiries/repository.ts) | 공개 사이트와 분리한 CodeQL 관찰용 코드 |
-
-## 실제 자동화와 가상 역할
-
-Build·Test·CodeQL·Pages 배포·Dependabot PR은 실제 실행입니다.
-노트 PR 작성자는 **GitHub Actions bot**이며, Copilot cloud agent가 수행한 개발·리뷰 기록으로 표시하지 않습니다.
-PM·수행사 댓글은 역할을 설명하는 가상 문안입니다.
-
-PR 리뷰 승인, 외부 작성자 workflow 실행 승인, `qa`·`production` 환경 배포 승인은 서로 다른 기록입니다.
-샘플 소유자 계정이 작성한 승인 예이며, 실제 기업의 승인 조직·운영 정책을 대신하지 않습니다.
-기업 환경에서는 사용 가능한 기능·권한·실행 위치·데이터 반출 정책을 별도로 확인해야 합니다.
-
-## 안전한 샘플 범위
-
-- 데이터·역할·업무 판단은 가상입니다. 실제 기업의 코드·고객 자료를 사용하지 않습니다.
-- 공개 사이트의 Build는 `web/`의 여섯 정적 파일과 매니페스트만 포함합니다.
-- `src/inquiries/repository.ts`는 Code scanning 동작을 보여 주는 **비배포 격리 예시**입니다. 실제 서비스 서버를 시작하지 않습니다.
-- `lodash@4.17.20`은 Dependabot 경고를 관찰하기 위한 의존성입니다. 공개 화면에서 불러오지 않으며, 안전한 버전의 사용을 권장하는 샘플이 아닙니다.
-- 유효한 키·토큰·비밀번호를 저장소에 넣지 않습니다. Secret scanning 시험 문자열은 미발급·사용 불가능한 데이터입니다.
-- PR·Issue 번호와 실행 시각은 GitHub가 실제 부여한 값을 사용합니다. 강의의 가상 번호·날짜와 구분합니다.
-
-## 패키지 소스
-
-CI의 npm 명령은 `packagefeedproxy.microsoft.io/npm/`을 사용합니다.
-기존 잠금 파일에는 공개 패키지 미러 `ms-feed-25.pkgs.visualstudio.com`의 URL이 기록되어 있으므로,
-Dependabot에도 해당 호스트를 명시적으로 등록합니다. 버전·무결성 값·기존 URL은 임의로 바꾸지 않았으며,
-레지스트리 인증 키도 추가하지 않았습니다.
-
-이 선언 후에도 npm 보안 업데이트 job에서 미러 호스트 차단이 실제로 발생했습니다.
-[실패 실행](https://github.com/hijigoo/github-workflow-sample/actions/runs/41293406345)을 보존하며, 자동 보안 조치가 완료되었다고 표시하지 않습니다.
-공개 화면은 해당 의존성을 사용하지 않습니다.
-
-이 문서와 가상 예시는 Copilot을 활용해 작성했습니다. 제품 기능·실행 결과는 연결된 실제 기록과 구분하여 설명합니다.
+이 샘플의 승인 기록은 실제 기업의 승인 정책을 대표하지 않습니다.
