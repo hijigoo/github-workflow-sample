@@ -79,6 +79,17 @@ PR 리뷰 승인은 변경 검토, 외부 작성자 workflow 승인은 실행 �
 운영·QA 증빙의 `source_commit`, `sha256`, `release_run_id`를 Release 파일과 대조할 수 있습니다.
 최종 파일은 코드 분석 격리 예시·개발 의존성·키·환경 파일을 포함하지 않습니다.
 
+QA 증빙은 [QA 파일 증빙](https://hijigoo.github.io/github-workflow-sample/qa/release-evidence.json),
+운영 증빙은 [운영 파일 증빙](https://hijigoo.github.io/github-workflow-sample/deployment-evidence.json)에서 확인합니다.
+QA·운영·Release에 첨부한 `inquiry-app-v1.1.0.tar.gz`의 SHA-256은 모두 다음과 같습니다.
+
+```text
+80134ab4381b087eccf420dc82b0eda2951503f570aa7376abd558aba523835b
+```
+
+최종 파일은 [v1.1.0 Release 배포 파일](https://github.com/hijigoo/github-workflow-sample/releases/download/v1.1.0/inquiry-app-v1.1.0.tar.gz)에서도 받을 수 있습니다.
+Actions 보고서는 보존 기한이 있지만 최종 파일과 증빙 JSON은 Release에도 첨부되어 있습니다.
+
 ## 화면이 열리지 않을 때
 
 보고서 보존 기한과 로그인·계정 권한을 확인합니다.
