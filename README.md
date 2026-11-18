@@ -24,6 +24,7 @@
 - [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) · [QA 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/): 가상 문의 데이터를 조건별로 조회합니다.
 - [요구사항 문서](docs/requirements/v1.1.0.md) · [릴리스 노트](docs/release-notes/v1.1.0.md): Issue와 Release의 세부 내용을 확인합니다.
 - [보안 리포트](docs/security-report.md): 보안 경고의 상태·조치와 원본을 볼 수 없을 때의 대체 확인 경로를 안내합니다.
+- 배포 파일·증빙·해시는 [기록 열람 가이드](docs/reading-guide.md)에서, 패키지 소스와 업데이트 실패는 [보안 리포트](docs/security-report.md)에서 확인할 수 있습니다.
 - [Copilot 핸즈온 안내](docs/handson/README.md): 이 기록 열람 샘플과는 별도로, 승인된 환경에서 진행하는 실습입니다.
 
 ## 실제 기록과 샘플 데이터 구분하기
