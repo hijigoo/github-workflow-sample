@@ -8,6 +8,10 @@
 
 **먼저 보기:** [요구사항 #2](https://github.com/hijigoo/github-workflow-sample/issues/2) → [기능 PR](https://github.com/hijigoo/github-workflow-sample/pull/4) → [배포 준비 #5](https://github.com/hijigoo/github-workflow-sample/pull/5) → [main 반영 #6](https://github.com/hijigoo/github-workflow-sample/pull/6) → [최종 릴리스 공지](https://github.com/hijigoo/github-workflow-sample/releases/tag/v1.1.0)
 
+## 문서 길잡이
+
+[실제 화면과 열람 안내](#실제-화면과-열람-안내) · [네 가지 노트](#네-가지-노트) · [브랜치와 변경 이력](#브랜치와-변경-이력) · [검증·승인·배포를 대조하기](#검증승인배포를-대조하기) · [세 가지 보안 기능](#세-가지-보안-기능) · [저장소에서 열어 볼 파일](#저장소에서-열어-볼-파일) · [실제 자동화와 가상 역할](#실제-자동화와-가상-역할) · [안전한 샘플 범위](#안전한-샘플-범위) · [패키지 소스](#패키지-소스)
+
 ## 실제 화면과 열람 안내
 
 [운영 샘플 화면](https://hijigoo.github.io/github-workflow-sample/) · [QA 샘플 화면](https://hijigoo.github.io/github-workflow-sample/qa/) · [어디에서 무엇을 볼지](docs/reading-guide.md) · [보안 리포트와 확인 경로](docs/security-report.md)
